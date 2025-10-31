@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { activateAccount } from "@/lib/web3/activation";
 import { useWeb3 } from "@/lib/web3/Web3Context";
 import { showToast } from "@/lib/toast";
+import { parseActivationError } from "@/lib/web3/errorParser";
 
 interface ActivationModalProps {
   isOpen: boolean;
@@ -106,18 +107,7 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
       onClose();
     } catch (error: any) {
       console.error('Activation error:', error);
-      let errorMessage = "Failed to activate account";
-      
-      if (error?.message?.includes('user rejected')) {
-        errorMessage = "Transaction was rejected by user";
-      } else if (error?.message?.includes('insufficient funds')) {
-        errorMessage = "Insufficient funds for activation fee";
-      } else if (error?.message?.includes('already activated')) {
-        errorMessage = "Account is already activated";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
+      const errorMessage = parseActivationError(error);
       showToast(errorMessage, 'error');
     } finally {
       setIsActivating(false);
