@@ -1,85 +1,85 @@
 /**
- * Parse Web3/Contract errors into human-readable messages
+ * Parse contract errors into human-friendly messages
  */
 
-export function parseWeb3Error(error: any): string {
+export function parseContractError(error: any): string {
   const errorString = error?.message || error?.toString() || '';
   
-  console.error('Raw error:', error);
-  
+  console.error('Contract Error:', error);
+
   // User rejected transaction
   if (errorString.includes('user rejected') || 
       errorString.includes('User denied') ||
-      errorString.includes('user denied')) {
+      errorString.includes('rejected the request')) {
     return 'You cancelled the transaction';
   }
-  
+
   // Insufficient funds
   if (errorString.includes('insufficient funds') ||
       errorString.includes('insufficient balance')) {
     return 'Insufficient funds in your wallet. Please add more tokens.';
   }
-  
+
   // Gas estimation failed
   if (errorString.includes('estimateGas') ||
-      errorString.includes('cannot estimate gas')) {
-    return 'Transaction would fail. Please check your balance and try again.';
+      errorString.includes('gas required exceeds')) {
+    return 'Transaction may fail. Please check your balance and try again.';
   }
-  
+
   // Already activated
   if (errorString.includes('already activated') ||
       errorString.includes('AlreadyActivated')) {
     return 'Your account is already activated';
   }
-  
+
   // Invalid referrer
   if (errorString.includes('invalid referrer') ||
       errorString.includes('InvalidReferrer')) {
     return 'Invalid referrer address. Please check and try again.';
   }
-  
+
   // Allowance issues
   if (errorString.includes('allowance') ||
-      errorString.includes('ERC20: insufficient allowance')) {
-    return 'Token approval required. Please approve USDT spending first.';
+      errorString.includes('approve')) {
+    return 'Token approval required. Please approve the transaction.';
   }
-  
+
   // Network issues
   if (errorString.includes('network') ||
       errorString.includes('connection')) {
     return 'Network connection issue. Please check your internet and try again.';
   }
-  
+
+  // Contract not found
+  if (errorString.includes('contract') && errorString.includes('not found')) {
+    return 'Contract not found. Please ensure you are on the correct network.';
+  }
+
   // Nonce issues
   if (errorString.includes('nonce')) {
-    return 'Transaction conflict. Please try again in a moment.';
+    return 'Transaction error. Please reset your wallet and try again.';
   }
-  
-  // Contract reverted
-  if (errorString.includes('execution reverted')) {
-    // Try to extract revert reason
-    const reasonMatch = errorString.match(/reason="([^"]+)"/);
-    if (reasonMatch) {
-      return `Transaction failed: ${reasonMatch[1]}`;
-    }
-    return 'Transaction was rejected by the contract. Please check your inputs.';
-  }
-  
-  // Missing revert data (usually means transaction would fail)
-  if (errorString.includes('missing revert data')) {
-    return 'Transaction cannot be processed. Please ensure you have enough USDT (10 USDT required) and try again.';
-  }
-  
+
   // Timeout
   if (errorString.includes('timeout')) {
     return 'Transaction timed out. Please try again.';
   }
-  
-  // Generic fallback
-  if (errorString.length > 200) {
-    return 'Transaction failed. Please check your wallet balance and network connection.';
+
+  // Missing revert data (contract call failed)
+  if (errorString.includes('missing revert data')) {
+    return 'Transaction failed. Please ensure you have enough USDT and try again.';
   }
-  
+
+  // Generic execution reverted
+  if (errorString.includes('execution reverted')) {
+    return 'Transaction was rejected by the contract. Please check your inputs and try again.';
+  }
+
+  // Default fallback
+  if (errorString.length > 100) {
+    return 'Transaction failed. Please try again or contact support if the issue persists.';
+  }
+
   return errorString || 'An unexpected error occurred. Please try again.';
 }
 
@@ -88,54 +88,74 @@ export function parseWeb3Error(error: any): string {
  */
 export function parseActivationError(error: any): string {
   const errorString = error?.message || error?.toString() || '';
-  
+
   // Check for specific activation errors first
-  if (errorString.includes('missing revert data')) {
-    return 'Unable to activate. Please ensure you have at least 10 USDT in your wallet and have approved the contract to spend it.';
+  if (errorString.includes('already activated')) {
+    return 'Your account is already activated. No need to activate again!';
   }
-  
-  if (errorString.includes('estimateGas')) {
-    return 'Activation would fail. Common reasons:\n• Insufficient USDT balance (need 10 USDT)\n• USDT not approved for spending\n• Invalid referrer address\n• Account already activated';
+
+  if (errorString.includes('insufficient') && errorString.includes('USDT')) {
+    return 'You need at least 10 USDT to activate your account. Please add USDT to your wallet.';
   }
-  
-  // Use general parser
-  return parseWeb3Error(error);
+
+  if (errorString.includes('invalid referrer')) {
+    return 'The referrer address is invalid. Please check the address and try again.';
+  }
+
+  if (errorString.includes('estimateGas') || errorString.includes('missing revert data')) {
+    return 'Unable to activate. Please ensure you have at least 10 USDT and have approved the contract.';
+  }
+
+  // Fall back to general error parser
+  return parseContractError(error);
 }
 
 /**
- * Parse trading errors
+ * Parse trading-specific errors
  */
 export function parseTradingError(error: any): string {
   const errorString = error?.message || error?.toString() || '';
-  
-  if (errorString.includes('insufficient')) {
-    return 'Insufficient token balance for this trade';
+
+  if (errorString.includes('insufficient') && errorString.includes('USDT')) {
+    return 'Insufficient USDT balance for this purchase';
   }
-  
-  if (errorString.includes('slippage')) {
-    return 'Price changed too much. Please try again.';
+
+  if (errorString.includes('insufficient') && errorString.includes('ST')) {
+    return 'Insufficient ST token balance for this sale';
   }
-  
-  return parseWeb3Error(error);
+
+  if (errorString.includes('minimum')) {
+    return 'Amount is below the minimum required';
+  }
+
+  if (errorString.includes('maximum')) {
+    return 'Amount exceeds the maximum allowed';
+  }
+
+  return parseContractError(error);
 }
 
 /**
- * Parse pool investment errors
+ * Parse investment-specific errors
  */
-export function parsePoolError(error: any): string {
+export function parseInvestmentError(error: any): string {
   const errorString = error?.message || error?.toString() || '';
-  
-  if (errorString.includes('minimum')) {
+
+  if (errorString.includes('not activated')) {
+    return 'Please activate your account before investing';
+  }
+
+  if (errorString.includes('minimum investment')) {
     return 'Investment amount is below the minimum required';
   }
-  
-  if (errorString.includes('maximum')) {
+
+  if (errorString.includes('maximum investment')) {
     return 'Investment amount exceeds the maximum allowed';
   }
-  
-  if (errorString.includes('pool full')) {
-    return 'This pool is currently full. Please try another pool.';
+
+  if (errorString.includes('pool closed')) {
+    return 'This pool is currently closed for investments';
   }
-  
-  return parseWeb3Error(error);
+
+  return parseContractError(error);
 }

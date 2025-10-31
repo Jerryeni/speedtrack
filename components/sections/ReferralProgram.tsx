@@ -82,17 +82,19 @@ export default function ReferralProgram() {
         </div>
 
         <div className="bg-gray-800 rounded-2xl p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 mr-3">
-              <p className="text-xs text-gray-400 mb-1">Your referral link</p>
-              <p className="font-mono text-sm text-gray-300 truncate">{referralLink}</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-400">Your referral link</p>
+              <button
+                onClick={copyLink}
+                className="min-w-[44px] min-h-[44px] bg-purple-500 hover:bg-purple-600 rounded-xl px-4 py-2 text-white text-sm font-medium transition-colors active:scale-95"
+              >
+                <i className="fas fa-copy"></i>
+              </button>
             </div>
-            <button
-              onClick={copyLink}
-              className="bg-purple-500 hover:bg-purple-600 rounded-xl px-4 py-2 text-white text-sm font-medium transition-colors"
-            >
-              <i className="fas fa-copy"></i>
-            </button>
+            <div className="bg-gray-900 rounded-lg p-2 overflow-x-auto">
+              <p className="font-mono text-xs text-gray-300 whitespace-nowrap">{referralLink}</p>
+            </div>
           </div>
         </div>
 

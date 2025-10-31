@@ -41,25 +41,25 @@ export default function NetworkTree({ levels, isLoading, userAddress }: NetworkT
 
   const displayLevels = levels.map((level, index) => ({
     ...level,
-    ...levelConfigs[index],
-    name: levelConfigs[index].name
+    ...levelConfigs[Math.min(index, levelConfigs.length - 1)],
+    name: levelConfigs[Math.min(index, levelConfigs.length - 1)].name
   }));
 
   return (
-    <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: "0.6s" }}>
+    <section className="px-4 md:px-6 lg:px-8 mb-6 animate-slide-up" style={{ animationDelay: "0.6s" }}>
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <h3 className="font-orbitron font-bold text-lg">Your Network Tree</h3>
+            <h3 className="font-orbitron font-bold text-base md:text-lg">Your Network Tree</h3>
             <button
               onClick={() => showToast("Expanding network tree view...")}
-              className="text-neon-blue hover:text-electric-purple transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-neon-blue hover:text-electric-purple transition-colors active:scale-95"
             >
               <i className="fas fa-expand-alt"></i>
             </button>
           </div>
         </div>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {isLoading ? (
             <div className="text-center text-gray-400 py-8">
               <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
@@ -73,24 +73,24 @@ export default function NetworkTree({ levels, isLoading, userAddress }: NetworkT
             </div>
           ) : (
             displayLevels.map((level) => (
-              <div key={level.level} className="mb-6 last:mb-0">
+              <div key={level.level} className="mb-4 md:mb-6 last:mb-0">
                 <div
-                  className={`flex items-center justify-between ${level.bgColor} rounded-xl p-4 border ${level.borderColor} animate-[treeNodeFloat_4s_ease-in-out_infinite]`}
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${level.bgColor} rounded-xl p-4 border ${level.borderColor} animate-[treeNodeFloat_4s_ease-in-out_infinite]`}
                   style={{ animationDelay: level.delay }}
                 >
                   <div className="flex items-center space-x-3">
                     <div
-                      className={`w-10 h-10 rounded-full bg-gradient-to-r ${level.gradient} flex items-center justify-center`}
+                      className={`min-w-[40px] min-h-[40px] md:w-10 md:h-10 rounded-full bg-gradient-to-r ${level.gradient} flex items-center justify-center`}
                     >
                       <span className="font-orbitron font-bold text-sm">L{level.level}</span>
                     </div>
                     <div>
-                      <div className="font-medium text-white">{level.name}</div>
+                      <div className="font-medium text-white text-sm md:text-base">{level.name}</div>
                       <div className="text-xs text-gray-400">{level.users} Active Users</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className={`text-lg font-orbitron font-bold ${level.textColor}`}>
+                  <div className="text-left sm:text-right ml-[52px] sm:ml-0">
+                    <div className={`text-base md:text-lg font-orbitron font-bold ${level.textColor}`}>
                       ${level.earned}
                     </div>
                     <div className="text-xs text-gray-400">Total Earned</div>
@@ -104,7 +104,7 @@ export default function NetworkTree({ levels, isLoading, userAddress }: NetworkT
             <div className="text-center mt-4">
               <button
                 onClick={() => setShowFullTree(true)}
-                className="bg-gradient-to-r from-neon-blue to-electric-purple text-dark-primary font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
+                className="bg-gradient-to-r from-neon-blue to-electric-purple text-dark-primary font-bold py-3 px-4 md:px-6 rounded-xl hover:shadow-lg transition-all active:scale-95 min-h-[48px] w-full sm:w-auto text-sm md:text-base"
               >
                 <i className="fas fa-sitemap mr-2"></i>
                 View Full Network Tree

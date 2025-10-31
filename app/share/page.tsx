@@ -54,8 +54,8 @@ export default function SharePage() {
   // Show wallet connection prompt only if no account
   if (!account) {
     return (
-      <main className="min-h-screen pb-20 flex items-center justify-center">
-        <div className="text-center px-4">
+      <main className="min-h-screen pb-20 flex items-center justify-center px-4">
+        <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
             <i className="fas fa-wallet text-yellow-400 text-3xl"></i>
           </div>
@@ -72,28 +72,28 @@ export default function SharePage() {
 
   return (
     <main className="min-h-screen pb-20">
-      <header className="relative z-50 px-4 py-6">
-        <div className="flex items-center justify-between">
+      <header className="relative z-50 px-4 md:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center"
+              className="min-w-[44px] min-h-[44px] rounded-full bg-gray-800 flex items-center justify-center active:scale-95 transition-transform"
             >
               <i className="fas fa-arrow-left text-neon-blue"></i>
             </button>
             <div>
-              <h1 className="text-xl font-orbitron font-bold text-neon-blue">Share & Earn</h1>
-              <p className="text-xs text-gray-400">Invite Friends to Race</p>
+              <h1 className="text-xl md:text-2xl font-orbitron font-bold text-neon-blue">Share & Earn</h1>
+              <p className="text-xs md:text-sm text-gray-400">Invite Friends to Race</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 ml-auto sm:ml-0">
             <div className="text-right">
               <p className="text-xs text-gray-400">Total Earned</p>
-              <p className="text-sm font-bold text-green-400 animate-[earningsHighlight_3s_ease-in-out_infinite]">
-                {isLoading ? '...' : `$${parseFloat(referralStats?.totalEarned || '0').toFixed(2)}`}
+              <p className="text-sm md:text-base font-bold text-green-400 animate-[earningsHighlight_3s_ease-in-out_infinite]">
+                {isLoading ? '...' : `${parseFloat(referralStats?.totalEarned || '0').toFixed(2)}`}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-electric-purple/20 flex items-center justify-center">
+            <div className="min-w-[44px] min-h-[44px] rounded-full bg-electric-purple/20 flex items-center justify-center">
               <i className="fas fa-share-alt text-electric-purple"></i>
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function SharePage() {
 
       {/* Wrong Network Warning */}
       {!isCorrectChain && (
-        <div className="px-4 mb-4">
+        <div className="px-4 md:px-6 lg:px-8 mb-4">
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
             <div className="flex items-center space-x-3">
               <i className="fas fa-exclamation-triangle text-red-400 text-xl"></i>

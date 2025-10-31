@@ -54,28 +54,32 @@ export default function ShareLink({ referralLink, shortLink, referralCode, isLoa
   };
 
   return (
-    <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+    <section className="px-4 md:px-6 lg:px-8 mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <h3 className="font-orbitron font-bold text-lg">Your Referral Link</h3>
+            <h3 className="font-orbitron font-bold text-base md:text-lg">Your Referral Link</h3>
             <div className="flex items-center space-x-2">
               <i className="fas fa-link text-neon-blue"></i>
               <span className="text-xs text-neon-blue">Ready to Share</span>
             </div>
           </div>
         </div>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <div className="bg-gray-800 rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 mr-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-1">Referral URL</p>
-                <p className="text-sm font-orbitron text-neon-blue break-all">{referralLink}</p>
+                <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+                  <p className="text-xs sm:text-sm font-mono text-neon-blue whitespace-nowrap">
+                    {referralLink}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={copyReferralLink}
                 disabled={isLoading || !referralLink}
-                className={`bg-neon-blue/20 text-neon-blue px-4 py-2 rounded-lg font-medium hover:bg-neon-blue/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`min-h-[48px] bg-neon-blue/20 text-neon-blue px-4 py-2 rounded-lg font-medium hover:bg-neon-blue/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 w-full sm:w-auto ${
                   copiedFull ? "animate-[linkCopy_0.5s_ease-out]" : ""
                 }`}
               >
@@ -86,15 +90,19 @@ export default function ShareLink({ referralLink, shortLink, referralCode, isLoa
           </div>
 
           <div className="bg-gray-800 rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 mr-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-1">Short Link</p>
-                <p className="text-sm font-orbitron text-electric-purple">{displayShortLink}</p>
+                <div className="bg-gray-900 rounded-lg p-3">
+                  <p className="text-sm font-mono text-electric-purple break-all">
+                    {displayShortLink}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={copyShortLink}
                 disabled={isLoading || !referralLink}
-                className={`bg-electric-purple/20 text-electric-purple px-4 py-2 rounded-lg font-medium hover:bg-electric-purple/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`min-h-[48px] bg-electric-purple/20 text-electric-purple px-4 py-2 rounded-lg font-medium hover:bg-electric-purple/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 w-full sm:w-auto ${
                   copiedShort ? "animate-[linkCopy_0.5s_ease-out]" : ""
                 }`}
               >
@@ -105,17 +113,17 @@ export default function ShareLink({ referralLink, shortLink, referralCode, isLoa
           </div>
 
           <div className="bg-gradient-to-r from-neon-blue/10 to-electric-purple/10 rounded-xl p-4 mb-4 border border-neon-blue/30">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 mr-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
                 <p className="text-xs text-gray-400 mb-1">Your Referral Code</p>
-                <p className="text-2xl font-orbitron font-bold text-neon-blue tracking-wider">
+                <p className="text-xl md:text-2xl font-orbitron font-bold text-neon-blue tracking-wider">
                   {isLoading ? '...' : referralCode || 'XXXXXXXX'}
                 </p>
               </div>
               <button
                 onClick={copyReferralCode}
                 disabled={isLoading || !referralCode}
-                className={`bg-neon-blue/20 text-neon-blue px-4 py-2 rounded-lg font-medium hover:bg-neon-blue/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`min-h-[48px] bg-neon-blue/20 text-neon-blue px-4 py-2 rounded-lg font-medium hover:bg-neon-blue/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 ${
                   copiedCode ? "animate-[linkCopy_0.5s_ease-out]" : ""
                 }`}
               >
@@ -137,9 +145,9 @@ export default function ShareLink({ referralLink, shortLink, referralCode, isLoa
               } transition-transform`}
             >
               {referralLink && !isLoading ? (
-                <QRCodeGenerator value={referralLink} size={128} />
+                <QRCodeGenerator value={referralLink} size={200} responsive={true} />
               ) : (
-                <div className="w-32 h-32 bg-gray-900 rounded-lg flex items-center justify-center">
+                <div className="w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] md:w-[280px] md:h-[280px] bg-gray-900 rounded-lg flex items-center justify-center">
                   <i className="fas fa-qrcode text-4xl text-neon-blue"></i>
                 </div>
               )}

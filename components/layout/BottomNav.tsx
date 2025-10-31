@@ -25,19 +25,39 @@ export default function BottomNav() {
     return `text-gray-400 ${colors[href] || "hover:text-neon-blue"}`;
   };
 
+  const handleTap = (e: React.MouseEvent) => {
+    // Provide haptic feedback on tap if supported
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t border-gray-700 px-4 py-3 z-40">
-      <div className="flex items-center justify-around">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex flex-col items-center space-y-1 transition-colors ${getColor(item.href)}`}
-          >
-            <i className={`fas ${item.icon} text-lg`}></i>
-            <span className="text-xs font-medium">{item.label}</span>
-          </Link>
-        ))}
+    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t border-gray-700 z-40 safe-area-inset backdrop-blur-sm">
+      <div className="flex items-center justify-around px-1 sm:px-2 py-2 max-w-screen-xl mx-auto">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={handleTap}
+              className={`
+                flex flex-col items-center justify-center gap-0.5 sm:gap-1
+                min-w-[56px] sm:min-w-[64px] min-h-[48px] 
+                px-2 sm:px-3 py-2 rounded-lg
+                transition-all duration-200
+                ${getColor(item.href)}
+                ${isActive ? 'bg-neon-blue/10 scale-105' : 'active:scale-95'}
+              `.trim().replace(/\s+/g, ' ')}
+            >
+              <i className={`fas ${item.icon} ${isActive ? 'text-lg sm:text-xl' : 'text-base sm:text-lg'}`}></i>
+              <span className={`text-[10px] sm:text-xs font-medium leading-tight ${isActive ? 'font-semibold' : ''}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

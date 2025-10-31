@@ -42,11 +42,11 @@ export default function ShareBanners({ onShare }: ShareBannersProps) {
   };
 
   return (
-    <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: "0.4s" }}>
+    <section className="px-4 md:px-6 lg:px-8 mb-6 animate-slide-up" style={{ animationDelay: "0.4s" }}>
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <h3 className="font-orbitron font-bold text-lg">Ready-to-Share Banners</h3>
+            <h3 className="font-orbitron font-bold text-base md:text-lg">Ready-to-Share Banners</h3>
             <button
               onClick={() => showToast("Banner download feature coming soon!")}
               className="text-green-400 hover:text-neon-blue transition-colors"
@@ -55,29 +55,29 @@ export default function ShareBanners({ onShare }: ShareBannersProps) {
             </button>
           </div>
         </div>
-        <div className="p-6">
-          <div className="space-y-4">
+        <div className="p-4 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {banners.map((banner, index) => (
               <div
                 key={index}
                 className={`bg-gradient-to-r ${banner.gradient} rounded-xl p-4 border ${banner.borderColor} animate-[bannerGlow_4s_ease-in-out_infinite] animate-[bannerSlide_0.6s_ease-out]`}
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-3">
                   <div className="flex items-center space-x-3">
                     <div
-                      className={`w-12 h-12 rounded-full bg-gradient-to-r ${banner.iconGradient} flex items-center justify-center`}
+                      className={`min-w-[48px] min-h-[48px] rounded-full bg-gradient-to-r ${banner.iconGradient} flex items-center justify-center`}
                     >
                       <i className={`fas ${banner.icon} text-dark-primary text-lg`}></i>
                     </div>
-                    <div>
-                      <h4 className="font-orbitron font-bold text-white">{banner.title}</h4>
+                    <div className="flex-1">
+                      <h4 className="font-orbitron font-bold text-white text-sm md:text-base">{banner.title}</h4>
                       <p className="text-xs text-gray-300">{banner.description}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleShare(index)}
-                    className={`${banner.buttonColor} px-3 py-2 rounded-lg text-sm transition-colors`}
+                    className={`${banner.buttonColor} min-h-[44px] px-3 py-2 rounded-lg text-sm transition-colors active:scale-95 w-full`}
                   >
                     Share
                   </button>

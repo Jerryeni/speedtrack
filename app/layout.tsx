@@ -18,6 +18,13 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Speed Track - Web3 Racing Finance",
   description: "Double your speed, double your earnings with revolutionary 2X Pool system",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: "cover",
+  },
 };
 
 export default function RootLayout({
@@ -36,7 +43,13 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${orbitron.variable} ${poppins.variable} bg-dark-primary font-poppins text-white overflow-x-hidden hide-scrollbar`}
+        className={`${orbitron.variable} ${poppins.variable} bg-dark-primary font-poppins text-white overflow-x-hidden hide-scrollbar safe-area-inset`}
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+        }}
       >
         <Web3Provider>
           {children}

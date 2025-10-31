@@ -66,57 +66,101 @@ export async function getNetworkLevels(userAddress: string): Promise<NetworkLeve
     // Get direct referrals count
     const directReferrals = Number(userDetails.totalDirectReferrals || 0);
     
-    // Get level income to estimate earnings per level
-    const levelIncome = await speedTrack.getLevelIncome(userAddress).catch(() => BigInt(0));
-    const totalLevelIncome = ethers.formatEther(levelIncome);
+    // Get total reward earned (this includes all level commissions)
+    const totalRewardEarned = ethers.formatEther(userDetails.totalRewardEarned || BigInt(0));
     
-    // Get level percentages
+    // Get level percentages from contract
     const levelPercentages = await speedTrack.getLevelPercentages().catch(() => 
       [10, 5, 3, 2, 1, 1, 1, 1, 1, 1]
     );
     
-    // Calculate estimated earnings per level based on percentages
-    const totalPercentage = levelPercentages.reduce((sum: number, p: any) => sum + Number(p), 0);
-    
     const levels: NetworkLevel[] = [];
     
+    // If user has no referrals, return empty array
+    if (directReferrals === 0) {
+      return levels;
+    }
+    
+    // Try to get actual referral addresses to count real network levels
+    let level1Count = directReferrals;
+    let level2Count = 0;
+    let level3Count = 0;
+    
+    try {
+      // Try to get referral list if the contract has this method
+      const referralList = await speedTrack.getReferrals(userAddress).catch(() => []);
+      
+      if (referralList && referralList.length > 0) {
+        level1Count = referralList.length;
+        
+        // Count level 2 referrals (referrals of referrals)
+        const level2Promises = referralList.map((ref: string) => 
+          speedTrack.getReferrals(ref).catch(() => [])
+        );
+        const level2Results = await Promise.all(level2Promises);
+        level2Count = level2Results.reduce((sum, refs) => sum + refs.length, 0);
+        
+        // Count level 3 referrals
+        if (level2Count > 0) {
+          const allLevel2Refs = level2Results.flat();
+          const level3Promises = allLevel2Refs.map((ref: string) => 
+            speedTrack.getReferrals(ref).catch(() => [])
+          );
+          const level3Results = await Promise.all(level3Promises);
+          level3Count = level3Results.reduce((sum, refs) => sum + refs.length, 0);
+        }
+      }
+    } catch (error) {
+      // If getReferrals doesn't exist, estimate based on direct referrals
+      console.log('Using estimated network counts');
+      level2Count = Math.floor(directReferrals * 1.5);
+      level3Count = Math.floor(level2Count * 0.8);
+    }
+    
+    // Calculate earnings per level based on percentages and total earned
+    const totalPercentage = levelPercentages.slice(0, 10).reduce((sum: number, p: any) => sum + Number(p), 0);
+    const totalEarned = parseFloat(totalRewardEarned);
+    
     // Level 1 - Direct referrals
-    if (directReferrals > 0) {
+    if (level1Count > 0) {
       const level1Percentage = Number(levelPercentages[0] || 10);
-      const level1Earned = (parseFloat(totalLevelIncome) * level1Percentage / totalPercentage).toFixed(2);
+      const level1Earned = totalEarned > 0 
+        ? (totalEarned * level1Percentage / totalPercentage).toFixed(2)
+        : '0.00';
       
       levels.push({
         level: 1,
-        users: directReferrals,
+        users: level1Count,
         earned: level1Earned
       });
     }
     
-    // Estimate Level 2 and 3 based on typical network growth
-    // Assuming each referral brings 1-2 more people
-    if (directReferrals > 0) {
-      const level2Users = Math.floor(directReferrals * 1.5);
+    // Level 2
+    if (level2Count > 0) {
       const level2Percentage = Number(levelPercentages[1] || 5);
-      const level2Earned = (parseFloat(totalLevelIncome) * level2Percentage / totalPercentage).toFixed(2);
+      const level2Earned = totalEarned > 0
+        ? (totalEarned * level2Percentage / totalPercentage).toFixed(2)
+        : '0.00';
       
       levels.push({
         level: 2,
-        users: level2Users,
+        users: level2Count,
         earned: level2Earned
       });
+    }
+    
+    // Level 3
+    if (level3Count > 0) {
+      const level3Percentage = Number(levelPercentages[2] || 3);
+      const level3Earned = totalEarned > 0
+        ? (totalEarned * level3Percentage / totalPercentage).toFixed(2)
+        : '0.00';
       
-      // Level 3
-      if (level2Users > 0) {
-        const level3Users = Math.floor(level2Users * 0.5);
-        const level3Percentage = Number(levelPercentages[2] || 3);
-        const level3Earned = (parseFloat(totalLevelIncome) * level3Percentage / totalPercentage).toFixed(2);
-        
-        levels.push({
-          level: 3,
-          users: level3Users,
-          earned: level3Earned
-        });
-      }
+      levels.push({
+        level: 3,
+        users: level3Count,
+        earned: level3Earned
+      });
     }
     
     return levels;

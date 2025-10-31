@@ -84,13 +84,13 @@ export default function SocialShare({ onShare }: SocialShareProps) {
   };
 
   return (
-    <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: "0.5s" }}>
+    <section className="px-4 md:px-6 lg:px-8 mb-6 animate-slide-up" style={{ animationDelay: "0.5s" }}>
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-700">
-          <h3 className="font-orbitron font-bold text-lg">Share on Social Media</h3>
+          <h3 className="font-orbitron font-bold text-base md:text-lg">Share on Social Media</h3>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 md:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {platforms.map((platform) => {
               const colorClasses = getColorClasses(platform.color);
               const [bgGradient, iconBg, textColor] = colorClasses.split(" bg-");
@@ -99,13 +99,13 @@ export default function SocialShare({ onShare }: SocialShareProps) {
                 <button
                   key={platform.name}
                   onClick={platform.onClick}
-                  className={`bg-gradient-to-r ${bgGradient} border rounded-xl p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg animate-[socialFloat_3s_ease-in-out_infinite]`}
+                  className={`bg-gradient-to-r ${bgGradient} border rounded-xl p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg animate-[socialFloat_3s_ease-in-out_infinite] active:scale-95 min-h-[120px]`}
                   style={{ animationDelay: platform.delay }}
                 >
-                  <div className={`w-12 h-12 rounded-full bg-${iconBg} flex items-center justify-center mx-auto mb-3`}>
+                  <div className={`min-w-[48px] min-h-[48px] rounded-full bg-${iconBg} flex items-center justify-center mx-auto mb-3`}>
                     <i className={`${platform.icon} ${textColor} text-xl`}></i>
                   </div>
-                  <p className={`font-medium ${textColor}`}>{platform.name}</p>
+                  <p className={`font-medium text-sm ${textColor}`}>{platform.name}</p>
                   <p className="text-xs text-gray-400 mt-1">{platform.description}</p>
                 </button>
               );

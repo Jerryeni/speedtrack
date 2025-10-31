@@ -115,13 +115,13 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-gray-700 relative my-8 max-h-[95vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-0 sm:p-4">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 w-full h-full sm:h-auto sm:rounded-2xl p-4 md:p-6 lg:p-8 sm:max-w-lg border-0 sm:border sm:border-gray-700 relative sm:my-8 max-h-screen sm:max-h-[95vh] overflow-y-auto shadow-2xl safe-area-inset keyboard-aware">
         {!isRequired && (
           <button
             onClick={onClose}
             disabled={isActivating}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            className="absolute top-4 right-4 min-w-[44px] min-h-[44px] rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10 active:scale-95"
           >
             <i className="fas fa-times text-gray-400"></i>
           </button>
@@ -162,9 +162,10 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
+              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
               placeholder="Enter your full name"
               disabled={isActivating}
+              autoComplete="name"
             />
           </div>
 
@@ -174,11 +175,13 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
             </label>
             <input
               type="tel"
+              inputMode="tel"
               value={formData.mobile}
               onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
+              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
               placeholder="+1 234 567 8900"
               disabled={isActivating}
+              autoComplete="tel"
             />
           </div>
 
@@ -188,11 +191,13 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
             </label>
             <input
               type="email"
+              inputMode="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
+              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
               placeholder="your@email.com"
               disabled={isActivating}
+              autoComplete="email"
             />
           </div>
 
@@ -210,9 +215,9 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
               type="text"
               value={formData.referrer}
               onChange={(e) => setFormData({ ...formData, referrer: e.target.value })}
-              className={`w-full bg-gray-800 border ${
+              className={`w-full min-h-[48px] bg-gray-800 border ${
                 formData.referrer ? 'border-green-500/50' : 'border-gray-700'
-              } rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all`}
+              } rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all`}
               placeholder="0x... (will be auto-filled if you used a referral link)"
               disabled={isActivating}
             />
@@ -224,13 +229,13 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
             )}
           </div>
 
-          <div className={`flex ${!isRequired ? 'gap-3' : ''} pt-4`}>
+          <div className={`flex flex-col sm:flex-row ${!isRequired ? 'gap-3' : ''} pt-4`}>
             {!isRequired && (
               <Button
                 type="button"
                 onClick={onClose}
                 disabled={isActivating}
-                className="flex-1 bg-gray-700 hover:bg-gray-600"
+                className="flex-1 bg-gray-700 hover:bg-gray-600 min-h-[48px]"
               >
                 Cancel
               </Button>
@@ -238,7 +243,7 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
             <Button
               type="submit"
               disabled={isActivating}
-              className={!isRequired ? 'flex-1' : 'w-full'}
+              className={`${!isRequired ? 'flex-1' : 'w-full'} min-h-[48px]`}
             >
               {isActivating ? (
                 <>
