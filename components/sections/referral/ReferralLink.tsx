@@ -1,45 +1,77 @@
 "use client";
 
+import { useState } from "react";
 import { showToast } from "@/lib/toast";
+import QRCodeGenerator from "@/components/ui/QRCodeGenerator";
 
-export default function ReferralLink() {
-  const referralCode = "RACE2024X7K9";
-  const referralLink = "https://racepool.io/ref/RACE2024X7K9";
+interface ReferralLinkProps {
+  referralLink?: string;
+  shortLink?: string;
+  referralCode?: string;
+  isLoading: boolean;
+}
+
+export default function ReferralLink({ referralLink, shortLink, referralCode, isLoading }: ReferralLinkProps) {
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const copyCode = () => {
+    if (!referralCode) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
     navigator.clipboard.writeText(referralCode);
-    showToast("Referral code copied!");
+    showToast("Referral code copied!", 'success');
   };
 
   const copyLink = () => {
+    if (!referralLink) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
     navigator.clipboard.writeText(referralLink);
-    showToast("Referral link copied!");
+    showToast("Referral link copied!", 'success');
   };
 
   const shareToTelegram = () => {
-    const text = `🏎️ Join RacePool - The Ultimate Web3 Racing Finance Platform! Use my referral link: ${referralLink}`;
+    if (!referralLink) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
+    const text = `🏎️ Join RacePool - The Ultimate Web3 Racing Finance Platform! Use my referral code: ${referralCode}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`);
   };
 
   const shareToTwitter = () => {
-    const text = `🏎️ Join me on RacePool - Web3 Racing Finance! Start your racing journey: ${referralLink} #RacePool #Web3 #DeFi`;
+    if (!referralLink) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
+    const text = `🏎️ Join me on RacePool - Web3 Racing Finance! Use code: ${referralCode}\n${referralLink}\n#RacePool #Web3 #DeFi`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
   };
 
   const shareToWhatsApp = () => {
-    const text = `🏎️ Hey! Join RacePool - Web3 Racing Finance Platform. Use my referral link: ${referralLink}`;
+    if (!referralLink) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
+    const text = `🏎️ Hey! Join RacePool - Web3 Racing Finance Platform.\n\nUse my referral code: ${referralCode}\nLink: ${referralLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
   };
 
   const shareMore = () => {
+    if (!referralLink) {
+      showToast("Please connect your wallet first", 'error');
+      return;
+    }
     if (navigator.share) {
       navigator.share({
         title: "Join RacePool",
-        text: "Join me on RacePool - Web3 Racing Finance Platform!",
+        text: `Join me on RacePool! Use code: ${referralCode}`,
         url: referralLink,
       });
     } else {
-      showToast("Share feature not available on this device");
+      showToast("Share feature not available on this device", 'info');
     }
   };
 
@@ -51,15 +83,18 @@ export default function ReferralLink() {
           <div className="text-xs bg-neon-blue/20 text-neon-blue px-2 py-1 rounded-full">Premium</div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-3 mb-4">
+        <div className="bg-gradient-to-r from-neon-blue/10 to-electric-purple/10 rounded-xl p-4 mb-4 border border-neon-blue/30">
           <div className="flex items-center justify-between">
             <div className="flex-1 mr-3">
-              <p className="text-xs text-gray-400 mb-1">Referral Code</p>
-              <p className="font-mono text-sm text-neon-blue">{referralCode}</p>
+              <p className="text-xs text-gray-400 mb-1">Your Referral Code</p>
+              <p className="font-mono text-2xl font-bold text-neon-blue tracking-wider">
+                {isLoading ? '...' : referralCode || 'XXXXXXXX'}
+              </p>
             </div>
             <button
               onClick={copyCode}
-              className="w-10 h-10 bg-neon-blue/20 hover:bg-neon-blue/30 rounded-lg flex items-center justify-center transition-all hover:-translate-y-0.5"
+              disabled={isLoading || !referralCode}
+              className="w-10 h-10 bg-neon-blue/20 hover:bg-neon-blue/30 rounded-lg flex items-center justify-center transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <i className="fas fa-copy text-neon-blue"></i>
             </button>
@@ -69,14 +104,35 @@ export default function ReferralLink() {
         <div className="bg-gray-800 rounded-xl p-3 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 mr-3">
-              <p className="text-xs text-gray-400 mb-1">Full Link</p>
-              <p className="font-mono text-xs text-white truncate">{referralLink}</p>
+              <p className="text-xs text-gray-400 mb-1">Short Link</p>
+              <p className="font-mono text-xs text-electric-purple">
+                {isLoading ? '...' : shortLink || 'Connect wallet'}
+              </p>
             </div>
             <button
               onClick={copyLink}
-              className="w-10 h-10 bg-electric-purple/20 hover:bg-electric-purple/30 rounded-lg flex items-center justify-center transition-all hover:-translate-y-0.5"
+              disabled={isLoading || !referralLink}
+              className="w-10 h-10 bg-electric-purple/20 hover:bg-electric-purple/30 rounded-lg flex items-center justify-center transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <i className="fas fa-link text-electric-purple"></i>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-xl p-3 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 mr-3">
+              <p className="text-xs text-gray-400 mb-1">Full Link</p>
+              <p className="font-mono text-xs text-white truncate">
+                {isLoading ? '...' : referralLink || 'Connect wallet to get your link'}
+              </p>
+            </div>
+            <button
+              onClick={() => referralLink && setShowQRModal(true)}
+              disabled={isLoading || !referralLink}
+              className="w-10 h-10 bg-green-500/20 hover:bg-green-500/30 rounded-lg flex items-center justify-center transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i className="fas fa-qrcode text-green-400"></i>
             </button>
           </div>
         </div>
@@ -112,6 +168,72 @@ export default function ReferralLink() {
           </button>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQRModal && referralLink && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+          onClick={() => setShowQRModal(false)}
+        >
+          <div 
+            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 max-w-md w-full border border-gray-700 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQRModal(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
+            >
+              <i className="fas fa-times text-gray-400"></i>
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-neon-blue to-electric-purple flex items-center justify-center">
+                <i className="fas fa-qrcode text-2xl text-white"></i>
+              </div>
+              <h3 className="text-2xl font-orbitron font-bold text-neon-blue mb-2">
+                Your Referral QR Code
+              </h3>
+              <p className="text-sm text-gray-400">
+                Code: <span className="text-neon-blue font-bold">{referralCode}</span>
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl mb-6 flex items-center justify-center">
+              <QRCodeGenerator value={referralLink} size={280} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  copyLink();
+                  setShowQRModal(false);
+                }}
+                className="bg-neon-blue/20 text-neon-blue px-4 py-3 rounded-xl font-medium hover:bg-neon-blue/30 transition-all"
+              >
+                <i className="fas fa-copy mr-2"></i>
+                Copy Link
+              </button>
+              <button
+                onClick={() => {
+                  const canvas = document.querySelector('canvas');
+                  if (canvas) {
+                    const url = canvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `referral-qr-${referralCode}.png`;
+                    a.click();
+                    showToast('QR code downloaded!', 'success');
+                  }
+                }}
+                className="bg-electric-purple/20 text-electric-purple px-4 py-3 rounded-xl font-medium hover:bg-electric-purple/30 transition-all"
+              >
+                <i className="fas fa-download mr-2"></i>
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

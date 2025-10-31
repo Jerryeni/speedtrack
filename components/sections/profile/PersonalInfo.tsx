@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getUserDetails } from "@/lib/web3/activation";
 import { showToast } from "@/lib/toast";
 
 interface PersonalInfoProps {
@@ -9,20 +11,51 @@ interface PersonalInfoProps {
 }
 
 export default function PersonalInfo({ isEditMode, setIsEditMode }: PersonalInfoProps) {
-  const [fullName, setFullName] = useState("Alex Johnson");
-  const [phoneNumber, setPhoneNumber] = useState("+1 (555) 123-4567");
-  const [emailAddress, setEmailAddress] = useState("alex.johnson@email.com");
+  const { account, isConnected, isCorrectChain } = useWeb3();
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUserData() {
+      if (!account || !isConnected || !isCorrectChain) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await getUserDetails(account);
+        setFullName(userData.name || "");
+        setPhoneNumber(userData.mobile || "");
+        setEmailAddress(userData.email || "");
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchUserData();
+  }, [account, isConnected, isCorrectChain]);
 
   const handleSave = async () => {
     setIsSaving(true);
-    
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditMode(false);
-      showToast("Profile updated successfully!");
-    }, 1500);
+    showToast("Profile data is stored on blockchain and cannot be edited after activation");
+    setIsSaving(false);
+    setIsEditMode(false);
   };
+
+  if (isLoading) {
+    return (
+      <section className="px-4 mb-6">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl border border-gray-700 p-6">
+          <div className="text-center text-gray-400">Loading profile data...</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>

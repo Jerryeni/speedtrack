@@ -1,32 +1,41 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentPool, getPoolInfo } from "@/lib/web3/pools";
+import { getSpeedTrackReadOnly } from "@/lib/web3/contracts";
+import { ethers } from "ethers";
 import StatCard from "@/components/ui/StatCard";
 
 export default function Stats() {
-  useEffect(() => {
-    const animateCounter = (element: HTMLElement | null, target: number, duration = 2000) => {
-      if (!element) return;
-      
-      let start = 0;
-      const increment = target / (duration / 16);
-      
-      const updateCounter = () => {
-        start += increment;
-        if (start < target) {
-          element.textContent = Math.floor(start).toLocaleString();
-          requestAnimationFrame(updateCounter);
-        } else {
-          element.textContent = target.toLocaleString();
-        }
-      };
-      updateCounter();
-    };
+  const [stats, setStats] = useState({
+    currentPool: 0,
+    totalLiquidity: "0",
+    poolProgress: 0,
+    investorCount: 0
+  });
 
-    setTimeout(() => {
-      animateCounter(document.getElementById('total-users'), 24891);
-      animateCounter(document.getElementById('pools-filled'), 1247);
-    }, 500);
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const poolNum = await getCurrentPool();
+        const poolInfo = await getPoolInfo(poolNum);
+        const speedTrack = await getSpeedTrackReadOnly();
+        const liquidity = await speedTrack.getTotalLiquidity();
+
+        setStats({
+          currentPool: poolNum,
+          totalLiquidity: ethers.formatEther(liquidity),
+          poolProgress: poolInfo.progress,
+          investorCount: poolInfo.investorCount
+        });
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      }
+    }
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -38,28 +47,26 @@ export default function Stats() {
 
         <div className="grid grid-cols-2 gap-4 mb-6">
           <StatCard 
-            id="total-users"
-            value="24,891" 
-            label="Total Racers" 
+            value={`Pool #${stats.currentPool}`}
+            label="Current Pool" 
             color="text-neon-blue"
-            progress={80}
+            progress={stats.poolProgress}
           />
           <StatCard 
-            value="$2.4M" 
-            label="Total Investment" 
+            value={`${parseFloat(stats.totalLiquidity).toFixed(0)} USDT`}
+            label="Total Liquidity" 
             color="text-electric-purple"
             progress={75}
           />
           <StatCard 
-            id="pools-filled"
-            value="1,247" 
+            value={stats.currentPool > 0 ? (stats.currentPool - 1).toString() : "0"}
             label="Pools Completed" 
             color="text-green-400"
             progress={100}
           />
           <StatCard 
-            value="$156K" 
-            label="Active Rewards" 
+            value={stats.investorCount.toString()}
+            label="Active Investors" 
             color="text-yellow-400"
             progress={66}
           />

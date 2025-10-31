@@ -1,14 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { showToast } from "@/lib/toast";
+import NetworkTreeModal from "@/components/modals/NetworkTreeModal";
 
-export default function NetworkTree() {
-  const levels = [
+interface NetworkTreeProps {
+  levels: any[];
+  isLoading: boolean;
+  userAddress?: string;
+}
+
+export default function NetworkTree({ levels, isLoading, userAddress }: NetworkTreeProps) {
+  const [showFullTree, setShowFullTree] = useState(false);
+  const levelConfigs = [
     {
-      level: 1,
       name: "Direct Referrals",
-      users: 89,
-      earned: "$2,145.30",
       gradient: "from-neon-blue to-electric-purple",
       bgColor: "bg-neon-blue/10",
       borderColor: "border-neon-blue/30",
@@ -16,10 +22,7 @@ export default function NetworkTree() {
       delay: "0s",
     },
     {
-      level: 2,
       name: "Level 2 Network",
-      users: 134,
-      earned: "$1,072.65",
       gradient: "from-electric-purple to-green-400",
       bgColor: "bg-electric-purple/10",
       borderColor: "border-electric-purple/30",
@@ -27,10 +30,7 @@ export default function NetworkTree() {
       delay: "0.2s",
     },
     {
-      level: 3,
       name: "Level 3 Network",
-      users: 24,
-      earned: "$312.25",
       gradient: "from-green-400 to-yellow-400",
       bgColor: "bg-green-400/10",
       borderColor: "border-green-400/30",
@@ -38,6 +38,12 @@ export default function NetworkTree() {
       delay: "0.4s",
     },
   ];
+
+  const displayLevels = levels.map((level, index) => ({
+    ...level,
+    ...levelConfigs[index],
+    name: levelConfigs[index].name
+  }));
 
   return (
     <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: "0.6s" }}>
@@ -54,44 +60,68 @@ export default function NetworkTree() {
           </div>
         </div>
         <div className="p-6">
-          {levels.map((level) => (
-            <div key={level.level} className="mb-6 last:mb-0">
-              <div
-                className={`flex items-center justify-between ${level.bgColor} rounded-xl p-4 border ${level.borderColor} animate-[treeNodeFloat_4s_ease-in-out_infinite]`}
-                style={{ animationDelay: level.delay }}
-              >
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`w-10 h-10 rounded-full bg-gradient-to-r ${level.gradient} flex items-center justify-center`}
-                  >
-                    <span className="font-orbitron font-bold text-sm">L{level.level}</span>
+          {isLoading ? (
+            <div className="text-center text-gray-400 py-8">
+              <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>Loading network data...</p>
+            </div>
+          ) : displayLevels.length === 0 ? (
+            <div className="text-center text-gray-400 py-8">
+              <i className="fas fa-users text-4xl mb-4 opacity-50"></i>
+              <p className="font-medium mb-2">No Network Yet</p>
+              <p className="text-sm">Start sharing your referral link to build your network!</p>
+            </div>
+          ) : (
+            displayLevels.map((level) => (
+              <div key={level.level} className="mb-6 last:mb-0">
+                <div
+                  className={`flex items-center justify-between ${level.bgColor} rounded-xl p-4 border ${level.borderColor} animate-[treeNodeFloat_4s_ease-in-out_infinite]`}
+                  style={{ animationDelay: level.delay }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-10 h-10 rounded-full bg-gradient-to-r ${level.gradient} flex items-center justify-center`}
+                    >
+                      <span className="font-orbitron font-bold text-sm">L{level.level}</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">{level.name}</div>
+                      <div className="text-xs text-gray-400">{level.users} Active Users</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-medium text-white">{level.name}</div>
-                    <div className="text-xs text-gray-400">{level.users} Active Users</div>
+                  <div className="text-right">
+                    <div className={`text-lg font-orbitron font-bold ${level.textColor}`}>
+                      ${level.earned}
+                    </div>
+                    <div className="text-xs text-gray-400">Total Earned</div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-lg font-orbitron font-bold ${level.textColor}`}>
-                    {level.earned}
-                  </div>
-                  <div className="text-xs text-gray-400">Total Earned</div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
 
-          <div className="text-center">
-            <button
-              onClick={() => showToast("Opening full network visualization...")}
-              className="bg-gradient-to-r from-neon-blue to-electric-purple text-dark-primary font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
-            >
-              <i className="fas fa-sitemap mr-2"></i>
-              View Full Network Tree
-            </button>
-          </div>
+          {displayLevels.length > 0 && (
+            <div className="text-center mt-4">
+              <button
+                onClick={() => setShowFullTree(true)}
+                className="bg-gradient-to-r from-neon-blue to-electric-purple text-dark-primary font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
+              >
+                <i className="fas fa-sitemap mr-2"></i>
+                View Full Network Tree
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Full Network Tree Modal */}
+      {userAddress && (
+        <NetworkTreeModal
+          isOpen={showFullTree}
+          onClose={() => setShowFullTree(false)}
+          userAddress={userAddress}
+        />
+      )}
     </section>
   );
 }

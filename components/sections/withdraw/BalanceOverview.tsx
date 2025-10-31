@@ -1,9 +1,32 @@
-interface BalanceOverviewProps {
-  poolBalance: number;
-  refBalance: number;
-}
+"use client";
 
-export default function BalanceOverview({ poolBalance, refBalance }: BalanceOverviewProps) {
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getRewardSummary } from "@/lib/web3/rewards";
+
+export default function BalanceOverview() {
+  const { account, isConnected, isCorrectChain } = useWeb3();
+  const [rewardData, setRewardData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!account || !isConnected || !isCorrectChain) return;
+
+      try {
+        const rewards = await getRewardSummary(account);
+        setRewardData(rewards);
+      } catch (error) {
+        console.error("Failed to fetch balance data:", error);
+      }
+    }
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
+  const poolBalance = parseFloat(rewardData?.availableToClaim || '0');
+  const refBalance = parseFloat(rewardData?.levelIncome || '0');
   const totalBalance = poolBalance + refBalance;
 
   return (

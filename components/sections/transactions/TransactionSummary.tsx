@@ -1,36 +1,52 @@
-export default function TransactionSummary() {
+import { Transaction } from "@/lib/web3/events";
+
+interface TransactionSummaryProps {
+  transactions: Transaction[];
+}
+
+export default function TransactionSummary({ transactions }: TransactionSummaryProps) {
+  const totalCount = transactions.length;
+  const completedCount = totalCount; // All fetched transactions are completed
+  const completedPercent = totalCount > 0 ? 100 : 0;
+
+  // Count by type
+  const activations = transactions.filter(tx => tx.type === 'activation').length;
+  const poolInvests = transactions.filter(tx => tx.type === 'pool_invest').length;
+  const rewards = transactions.filter(tx => tx.type === 'reward_claim').length;
+  const trades = transactions.filter(tx => tx.type === 'st_buy' || tx.type === 'st_sell').length;
+
   const stats = [
     {
       icon: "fa-list",
       label: "Total Transactions",
-      value: "1,247",
+      value: totalCount.toString(),
       badge: "Total",
       color: "neon-blue",
       progress: 100,
     },
     {
-      icon: "fa-check-circle",
-      label: "Completed",
-      value: "1,198",
-      badge: "Success",
+      icon: "fa-swimming-pool",
+      label: "Pool Investments",
+      value: poolInvests.toString(),
+      badge: "Pools",
       color: "green-400",
-      progress: 96.1,
+      progress: totalCount > 0 ? (poolInvests / totalCount) * 100 : 0,
     },
     {
-      icon: "fa-clock",
-      label: "Processing",
-      value: "37",
-      badge: "Pending",
+      icon: "fa-gift",
+      label: "Rewards Claimed",
+      value: rewards.toString(),
+      badge: "Rewards",
       color: "yellow-400",
-      progress: 3.0,
+      progress: totalCount > 0 ? (rewards / totalCount) * 100 : 0,
     },
     {
-      icon: "fa-times-circle",
-      label: "Failed",
-      value: "12",
-      badge: "Failed",
-      color: "red-400",
-      progress: 0.9,
+      icon: "fa-exchange-alt",
+      label: "Token Trades",
+      value: trades.toString(),
+      badge: "Trades",
+      color: "electric-purple",
+      progress: totalCount > 0 ? (trades / totalCount) * 100 : 0,
     },
   ];
 

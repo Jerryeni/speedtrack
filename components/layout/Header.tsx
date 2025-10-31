@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Button from "@/components/ui/Button";
+import WalletButton from "@/components/web3/WalletButton";
+import BalanceDisplay from "@/components/web3/BalanceDisplay";
 
 export default function Header() {
   return (
@@ -17,11 +18,8 @@ export default function Header() {
           </div>
         </Link>
         <div className="flex items-center space-x-3">
-          <Link href="/wallet">
-            <Button className="px-4 py-2 rounded-xl text-sm">
-              Connect Wallet
-            </Button>
-          </Link>
+          <BalanceDisplay />
+          <WalletButton />
         </div>
       </div>
     </header>

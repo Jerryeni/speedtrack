@@ -1,5 +1,6 @@
 "use client";
 
+import { useWeb3 } from "@/lib/web3/Web3Context";
 import { showToast } from "@/lib/toast";
 
 interface WalletInfoProps {
@@ -7,14 +8,24 @@ interface WalletInfoProps {
 }
 
 export default function WalletInfo({ onShowQR }: WalletInfoProps) {
-  const walletAddress = "0x9012345678ABCDEF9012345678ABCDEF90123456";
-  const displayAddress = "0x9012...3456789ABCDEF";
+  const { account, balances, isConnected } = useWeb3();
+  
+  const walletAddress = account || "Not Connected";
+  const displayAddress = account ? `${account.slice(0, 6)}...${account.slice(-6)}` : "Not Connected";
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(walletAddress).then(() => {
+    if (!account) {
+      showToast("Please connect your wallet first");
+      return;
+    }
+    navigator.clipboard.writeText(account).then(() => {
       showToast("Wallet address copied to clipboard!");
     });
   };
+
+  const totalBalance = isConnected 
+    ? (parseFloat(balances.usdt) + parseFloat(balances.st)).toFixed(2)
+    : "0.00";
 
   return (
     <section className="px-4 mb-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
@@ -63,16 +74,16 @@ export default function WalletInfo({ onShowQR }: WalletInfoProps) {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 bg-gray-800/50 rounded-xl">
-              <p className="text-xs text-gray-400 mb-1">Balance</p>
-              <p className="font-bold text-neon-blue">$8,950</p>
+              <p className="text-xs text-gray-400 mb-1">USDT</p>
+              <p className="font-bold text-green-400">{parseFloat(balances.usdt).toFixed(2)}</p>
             </div>
             <div className="text-center p-3 bg-gray-800/50 rounded-xl">
-              <p className="text-xs text-gray-400 mb-1">Transactions</p>
-              <p className="font-bold text-electric-purple">247</p>
+              <p className="text-xs text-gray-400 mb-1">ST Tokens</p>
+              <p className="font-bold text-neon-blue">{parseFloat(balances.st).toFixed(2)}</p>
             </div>
             <div className="text-center p-3 bg-gray-800/50 rounded-xl">
-              <p className="text-xs text-gray-400 mb-1">Network</p>
-              <p className="font-bold text-green-400">BSC</p>
+              <p className="text-xs text-gray-400 mb-1">BNB</p>
+              <p className="font-bold text-yellow-400">{parseFloat(balances.bnb).toFixed(4)}</p>
             </div>
           </div>
         </div>

@@ -8,9 +8,9 @@ export default function BottomNav() {
 
   const navItems = [
     { href: "/dashboard", icon: "fa-home", label: "Dashboard" },
-    { href: "/pools", icon: "fa-swimming-pool", label: "Pools" },
-    { href: "/analytics", icon: "fa-chart-line", label: "Analytics" },
-    { href: "/wallet", icon: "fa-wallet", label: "Wallet" },
+    { href: "/trade", icon: "fa-exchange-alt", label: "Trade" },
+    { href: "/referral", icon: "fa-users", label: "Referral" },
+    { href: "/income", icon: "fa-chart-line", label: "Income" },
     { href: "/profile", icon: "fa-user", label: "Profile" },
   ];
 

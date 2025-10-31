@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Orbitron, Poppins } from "next/font/google";
 import "./globals.css";
+import { Web3Provider } from "@/lib/web3/Web3Context";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -37,7 +38,9 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${poppins.variable} bg-dark-primary font-poppins text-white overflow-x-hidden hide-scrollbar`}
       >
-        {children}
+        <Web3Provider>
+          {children}
+        </Web3Provider>
       </body>
     </html>
   );

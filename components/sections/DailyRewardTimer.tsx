@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { calculateReward } from "@/lib/web3/rewards";
+import Button from "@/components/ui/Button";
+import { claimRewards } from "@/lib/web3/rewards";
+import { showToast } from "@/lib/toast";
 
 export default function DailyRewardTimer() {
+  const { account, isConnected, isCorrectChain, refreshBalances } = useWeb3();
   const [time, setTime] = useState({ hours: 18, minutes: 42, seconds: 15 });
+  const [dailyReward, setDailyReward] = useState("0");
+  const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -27,6 +35,41 @@ export default function DailyRewardTimer() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    async function fetchReward() {
+      if (!account || !isConnected || !isCorrectChain) return;
+      
+      try {
+        const reward = await calculateReward(account);
+        setDailyReward(reward);
+      } catch (error) {
+        console.error("Failed to fetch reward:", error);
+      }
+    }
+
+    fetchReward();
+    const interval = setInterval(fetchReward, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
+  const handleClaimReward = async () => {
+    if (!account) return;
+
+    try {
+      setIsClaiming(true);
+      showToast("Processing claim transaction...");
+      const tx = await claimRewards();
+      await tx.wait();
+      showToast("Rewards claimed successfully!");
+      await refreshBalances();
+      setDailyReward("0");
+    } catch (error: any) {
+      showToast(error.message || "Failed to claim rewards");
+    } finally {
+      setIsClaiming(false);
+    }
+  };
 
   return (
     <section className="px-4 mb-8">
@@ -105,11 +148,32 @@ export default function DailyRewardTimer() {
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-sm text-orange-300">
-            Next reward: <span className="font-bold">0.0025 ETH</span>
-          </p>
-          <p className="text-xs text-gray-400">Estimated value: $4.99</p>
+        <div className="text-center space-y-3">
+          <div>
+            <p className="text-sm text-orange-300">
+              Available reward: <span className="font-bold">{parseFloat(dailyReward).toFixed(4)} USDT</span>
+            </p>
+            <p className="text-xs text-gray-400">Daily reward rate: 0.5%</p>
+          </div>
+          {isConnected && isCorrectChain && parseFloat(dailyReward) > 0 && (
+            <Button 
+              onClick={handleClaimReward}
+              disabled={isClaiming}
+              className="w-full"
+            >
+              {isClaiming ? (
+                <>
+                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                  Claiming...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-gift mr-2"></i>
+                  Claim Reward
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </section>

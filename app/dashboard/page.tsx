@@ -1,5 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { checkAccountActivation, getUserDetails } from "@/lib/web3/activation";
+import { getRewardSummary } from "@/lib/web3/rewards";
+import { getCurrentPool } from "@/lib/web3/pools";
+import { useTransactions } from "@/lib/web3/hooks/useTransactions";
+import { formatTimestamp, getTransactionStyle } from "@/lib/web3/events";
+import { NETWORK_CONFIG } from "@/lib/web3/config";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import BottomNav from "@/components/layout/BottomNav";
 import WalletStatus from "@/components/sections/WalletStatus";
@@ -7,26 +15,126 @@ import PoolProgress from "@/components/sections/PoolProgress";
 import DailyRewardTimer from "@/components/sections/DailyRewardTimer";
 import ReferralProgram from "@/components/sections/ReferralProgram";
 import StatCard from "@/components/ui/StatCard";
-import TransactionCard from "@/components/ui/TransactionCard";
+import ActivationModal from "@/components/modals/ActivationModal";
+import PoolInvestModal from "@/components/modals/PoolInvestModal";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
 
 export default function DashboardPage() {
+  const { account, isConnected, isCorrectChain } = useWeb3();
+  const { transactions, isLoading: txLoading } = useTransactions(5);
+  const [isActivated, setIsActivated] = useState(false);
+  const [showActivationModal, setShowActivationModal] = useState(false);
+  const [showInvestModal, setShowInvestModal] = useState(false);
+  const [currentPool, setCurrentPool] = useState(1);
+  const [userData, setUserData] = useState<any>(null);
+  const [rewardData, setRewardData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!account || !isConnected || !isCorrectChain) return;
+
+      try {
+        const [activated, userDetails, rewards, poolNum] = await Promise.all([
+          checkAccountActivation(account),
+          getUserDetails(account).catch(() => null),
+          getRewardSummary(account).catch(() => null),
+          getCurrentPool().catch(() => 1)
+        ]);
+
+        setIsActivated(activated);
+        setUserData(userDetails);
+        setRewardData(rewards);
+        setCurrentPool(poolNum);
+
+        // CRITICAL: Force activation modal for non-activated users
+        if (!activated) {
+          setShowActivationModal(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      }
+    }
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
+  const handleActivationSuccess = () => {
+    setIsActivated(true);
+    setShowActivationModal(false);
+  };
+  // Block dashboard content for non-activated users
+  if (isConnected && isCorrectChain && !isActivated) {
+    return (
+      <main className="min-h-screen pb-20">
+        <DashboardHeader />
+
+        <section className="px-4 py-12">
+          <div className="max-w-md mx-auto text-center">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center animate-pulse">
+              <i className="fas fa-lock text-white text-4xl"></i>
+            </div>
+            <h2 className="text-2xl font-orbitron font-bold text-yellow-400 mb-4">
+              Account Activation Required
+            </h2>
+            <p className="text-gray-400 mb-6">
+              You need to activate your account before accessing the dashboard and other features.
+            </p>
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 border border-gray-700 mb-6">
+              <h3 className="font-semibold mb-4">Activation Benefits:</h3>
+              <ul className="text-left space-y-2 text-sm text-gray-300">
+                <li className="flex items-center space-x-2">
+                  <i className="fas fa-check-circle text-green-400"></i>
+                  <span>Access to pool investments</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <i className="fas fa-check-circle text-green-400"></i>
+                  <span>Trade ST tokens</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <i className="fas fa-check-circle text-green-400"></i>
+                  <span>Earn daily rewards (0.5%)</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <i className="fas fa-check-circle text-green-400"></i>
+                  <span>Referral commissions (up to 10 levels)</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <i className="fas fa-check-circle text-green-400"></i>
+                  <span>Spin wheel credits</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+              <p className="text-sm text-yellow-400">
+                <i className="fas fa-info-circle mr-2"></i>
+                Activation fee: 10 USDT (one-time payment)
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <BottomNav />
+
+        <ActivationModal
+          isOpen={showActivationModal}
+          onClose={() => setShowActivationModal(false)}
+          onSuccess={handleActivationSuccess}
+          isRequired={true}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen pb-20">
       <DashboardHeader />
 
-      <WalletStatus
-        address="0x1234...5678"
-        ethBalance="2.45 ETH"
-        usdBalance="$4,892.30"
-      />
+      <WalletStatus />
 
-      <PoolProgress
-        cycleNumber={247}
-        completion={78}
-        participants={156}
-        totalPool="24.8 ETH"
-        timeLeft="2h 34m"
-      />
+      <PoolProgress />
 
       <section className="px-4 mb-8">
         <h3 className="text-lg font-orbitron font-bold mb-4">Key Statistics</h3>
@@ -36,8 +144,8 @@ export default function DashboardPage() {
             layout="box"
             icon="fa-swimming-pool"
             color="text-neon-blue"
-            value="Pool #247"
-            label="Racing Championship"
+            value={`Pool #${currentPool}`}
+            label="Current Pool"
             badge="Active"
             badgeColor="bg-green-500/20 text-green-400"
             gradient="from-neon-blue/10"
@@ -49,8 +157,8 @@ export default function DashboardPage() {
             layout="box"
             icon="fa-coins"
             color="text-electric-purple"
-            value="0.5 ETH"
-            label="$998.50"
+            value={`${parseFloat(userData?.totalInvestment || '0').toFixed(2)} USDT`}
+            label="Total Investment"
             badge="Invested"
             badgeColor="bg-electric-purple/20 text-electric-purple"
             gradient="from-electric-purple/10"
@@ -68,10 +176,14 @@ export default function DashboardPage() {
                 Earned
               </div>
             </div>
-            <div className="text-2xl font-bold text-green-400 mb-1">0.0625 ETH</div>
-            <div className="text-xs text-gray-400">$124.81</div>
+            <div className="text-2xl font-bold text-green-400 mb-1">
+              {parseFloat(rewardData?.totalEarned || '0').toFixed(4)} USDT
+            </div>
+            <div className="text-xs text-gray-400">Total Rewards</div>
             <div className="mt-3 flex items-center space-x-2">
-              <div className="text-xs text-green-400">Today: +0.0025</div>
+              <div className="text-xs text-green-400">
+                Today: +{parseFloat(rewardData?.dailyReward || '0').toFixed(4)}
+              </div>
               <i className="fas fa-chart-line text-green-400 text-xs"></i>
             </div>
           </div>
@@ -93,109 +205,97 @@ export default function DashboardPage() {
 
       <DailyRewardTimer />
 
-      <section className="px-4 mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-orbitron font-bold">Recent Transactions</h3>
-          <button className="text-electric-purple text-sm font-medium">View All</button>
-        </div>
-
-        <div className="space-y-3">
-          <TransactionCard
-            type="reward"
-            title="Daily Reward"
-            time="2 hours ago"
-            amount="0.0025 ETH"
-            usdValue="$4.99"
-            txHash="0x1234...5678"
-          />
-          <TransactionCard
-            type="reinvest"
-            title="Reinvestment"
-            time="1 day ago"
-            amount="0.05 ETH"
-            usdValue="$99.85"
-            txHash="0x9876...4321"
-          />
-          <TransactionCard
-            type="entry"
-            title="Pool Entry"
-            time="3 days ago"
-            amount="0.5 ETH"
-            usdValue="$997.00"
-            txHash="0x5555...7890"
-          />
-        </div>
-      </section>
-
-      <ReferralProgram />
-
-      <section className="px-4 mb-8">
-        <h3 className="text-lg font-orbitron font-bold mb-4">Pool Analytics</h3>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-gradient-to-br from-blue-500/10 to-transparent rounded-xl p-4 border border-blue-500/20">
-            <div className="flex items-center justify-between mb-3">
-              <i className="fas fa-chart-pie text-blue-400"></i>
-              <div className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                24h
-              </div>
-            </div>
-            <div className="text-xl font-bold text-blue-400">+8.2%</div>
-            <div className="text-xs text-gray-400">Pool Growth</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-red-500/10 to-transparent rounded-xl p-4 border border-red-500/20">
-            <div className="flex items-center justify-between mb-3">
-              <i className="fas fa-fire text-red-400"></i>
-              <div className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full">
-                Hot
-              </div>
-            </div>
-            <div className="text-xl font-bold text-red-400">142%</div>
-            <div className="text-xs text-gray-400">APY Rate</div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700">
+      {isConnected && isCorrectChain && transactions.length > 0 && (
+        <section className="px-4 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold">Pool Composition</h4>
-            <div className="text-xs text-gray-400">Live Data</div>
+            <h3 className="text-lg font-orbitron font-bold">Recent Transactions</h3>
+            <Link href="/transactions">
+              <button className="text-electric-purple text-sm font-medium">View All</button>
+            </Link>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 rounded-full bg-neon-blue"></div>
-                <span className="text-sm">Your Investment</span>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold">2.0%</div>
-                <div className="text-xs text-gray-400">0.5 ETH</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 rounded-full bg-electric-purple"></div>
-                <span className="text-sm">Other Participants</span>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold">98.0%</div>
-                <div className="text-xs text-gray-400">24.3 ETH</div>
-              </div>
-            </div>
+            {txLoading ? (
+              <div className="text-center text-gray-400 py-4">Loading transactions...</div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center text-gray-400 py-4">No transactions yet</div>
+            ) : (
+              transactions.map((tx) => {
+                const style = getTransactionStyle(tx.type);
+                return (
+                  <div
+                    key={tx.id}
+                    className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center`}>
+                          <i className={`fas ${style.icon} ${style.color}`}></i>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{tx.title}</p>
+                          <p className="text-xs text-gray-400">{formatTimestamp(tx.timestamp)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold text-sm ${style.color}`}>{tx.amount}</p>
+                        {tx.usdValue && (
+                          <p className="text-xs text-gray-400">{tx.usdValue}</p>
+                        )}
+                        <a
+                          href={`${NETWORK_CONFIG.blockExplorer}/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-neon-blue hover:underline"
+                        >
+                          View
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
+        </section>
+      )}
 
-          <div className="mt-4 h-2 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-neon-blue via-electric-purple to-neon-blue"
-              style={{ width: "100%" }}
-            ></div>
-          </div>
-        </div>
-      </section>
+      <ReferralProgram />
+
+      {isConnected && isCorrectChain && isActivated && (
+        <section className="px-4 mb-8">
+          <Button
+            onClick={() => setShowInvestModal(true)}
+            className="w-full py-4"
+          >
+            <i className="fas fa-plus-circle mr-2"></i>
+            Invest in Current Pool
+          </Button>
+        </section>
+      )}
 
       <BottomNav />
+
+      {/* Only show activation modal if not already shown in blocked state */}
+      {isActivated && (
+        <ActivationModal
+          isOpen={showActivationModal}
+          onClose={() => setShowActivationModal(false)}
+          onSuccess={handleActivationSuccess}
+          isRequired={false}
+        />
+      )}
+
+      <PoolInvestModal
+        isOpen={showInvestModal}
+        onClose={() => setShowInvestModal(false)}
+        onSuccess={() => {
+          setShowInvestModal(false);
+        }}
+        poolNumber={currentPool}
+        minAmount={currentPool === 1 ? 10 : 10}
+        maxAmount={currentPool === 1 ? 50 : 500}
+      />
     </main>
   );
 }

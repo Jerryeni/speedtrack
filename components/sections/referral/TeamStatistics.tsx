@@ -1,17 +1,40 @@
-export default function TeamStatistics() {
-  const stats = [
-    { icon: "fa-chart-line", value: "89", label: "Active This Week", change: "+12%", color: "neon-blue", changeColor: "green-400" },
-    { icon: "fa-fire", value: "23", label: "Inactive Members", change: "-3%", color: "electric-purple", changeColor: "red-400" },
-    { icon: "fa-rocket", value: "$1,247", label: "Weekly Earnings", change: "+25%", color: "green-400", changeColor: "green-400" },
-    { icon: "fa-users", value: "15", label: "New Members", change: "+8%", color: "yellow-400", changeColor: "yellow-400" },
+interface TeamStatisticsProps {
+  stats: any;
+  isLoading: boolean;
+}
+
+export default function TeamStatistics({ stats, isLoading }: TeamStatisticsProps) {
+  const totalReferrals = stats?.totalReferrals || 0;
+  const directReferrals = stats?.directReferrals || 0;
+  const totalEarned = parseFloat(stats?.levelIncome || '0');
+
+  const displayStats = [
+    { icon: "fa-users", value: totalReferrals.toString(), label: "Total Network", change: "+0%", color: "neon-blue", changeColor: "green-400" },
+    { icon: "fa-user-friends", value: directReferrals.toString(), label: "Direct Referrals", change: "+0%", color: "electric-purple", changeColor: "green-400" },
+    { icon: "fa-coins", value: `$${totalEarned.toFixed(2)}`, label: "Level Income", change: "+0%", color: "green-400", changeColor: "green-400" },
+    { icon: "fa-layer-group", value: "10", label: "Max Levels", change: "100%", color: "yellow-400", changeColor: "yellow-400" },
   ];
+
+  if (isLoading) {
+    return (
+      <section className="px-4 mb-6">
+        <h3 className="text-lg font-orbitron font-bold mb-4">Team Statistics</h3>
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 border border-gray-700">
+          <div className="text-center text-gray-400">
+            <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
+            <p>Loading statistics...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="px-4 mb-6">
       <h3 className="text-lg font-orbitron font-bold mb-4">Team Statistics</h3>
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700">
         <div className="grid grid-cols-2 gap-4 mb-4">
-          {stats.map((stat, index) => (
+          {displayStats.map((stat, index) => (
             <div key={index} className="bg-gray-800/50 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
                 <i className={`fas ${stat.icon} text-${stat.color}`}></i>

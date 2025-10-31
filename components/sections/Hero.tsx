@@ -1,9 +1,60 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { checkAccountActivation } from "@/lib/web3/activation";
 import Button from "@/components/ui/Button";
 
 export default function Hero() {
+  const router = useRouter();
+  const { account, isConnected, isCorrectChain, connect } = useWeb3();
+  const [isActivated, setIsActivated] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+
+  useEffect(() => {
+    async function checkStatus() {
+      if (!account || !isConnected || !isCorrectChain) return;
+      
+      setIsChecking(true);
+      try {
+        const activated = await checkAccountActivation(account);
+        setIsActivated(activated);
+      } catch (error) {
+        console.error("Failed to check activation:", error);
+      } finally {
+        setIsChecking(false);
+      }
+    }
+
+    checkStatus();
+  }, [account, isConnected, isCorrectChain]);
+
+  const handleAction = async () => {
+    if (!isConnected) {
+      await connect();
+    } else if (!isCorrectChain) {
+      router.push('/wallet');
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
+  const getButtonText = () => {
+    if (!isConnected) return "Connect Wallet & Start Racing";
+    if (!isCorrectChain) return "Switch to BSC Testnet";
+    if (isChecking) return "Checking Status...";
+    if (isActivated) return "Go to Dashboard";
+    return "Activate Account";
+  };
+
+  const getStatusText = () => {
+    if (!isConnected) return "Connect your wallet to begin";
+    if (!isCorrectChain) return "Please switch to BSC Testnet";
+    if (isActivated) return `Connected: ${account?.slice(0, 6)}...${account?.slice(-4)}`;
+    return "Activation required to start racing";
+  };
   return (
     <section className="px-4 py-8 h-[600px] flex flex-col justify-center">
       <div className="text-center">
@@ -29,16 +80,21 @@ export default function Hero() {
           multiplying your returns with blockchain transparency and lightning speed.
         </p>
 
-        <Link href="/wallet" className="block w-full max-w-xs mx-auto mb-6">
-          <Button className="w-full py-4 rounded-2xl text-lg">
-            <i className="fas fa-wallet mr-2"></i>
-            Connect Wallet & Start Racing
+        <div className="w-full max-w-xs mx-auto mb-6">
+          <Button 
+            onClick={handleAction}
+            className="w-full py-4 rounded-2xl text-lg"
+          >
+            <i className={`fas ${isConnected ? (isActivated ? 'fa-tachometer-alt' : 'fa-user-check') : 'fa-wallet'} mr-2`}></i>
+            {getButtonText()}
           </Button>
-        </Link>
+        </div>
 
-        <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse-custom"></div>
-          <span>24,891 racers already earning</span>
+        <div className="flex items-center justify-center space-x-2 text-sm">
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse-custom`}></div>
+          <span className={isConnected ? 'text-green-400' : 'text-gray-400'}>
+            {getStatusText()}
+          </span>
         </div>
       </div>
     </section>

@@ -1,8 +1,21 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useWeb3 } from "@/lib/web3/Web3Context";
 import IconCircle from "@/components/ui/IconCircle";
 import Button from "@/components/ui/Button";
 
 export default function JoinNow() {
+  const router = useRouter();
+  const { isConnected, connect } = useWeb3();
+
+  const handleJoin = async () => {
+    if (!isConnected) {
+      await connect();
+    } else {
+      router.push('/dashboard');
+    }
+  };
   const features = [
     { icon: "fa-check", text: "No Lock-in Period" },
     { icon: "fa-check", text: "Instant Payouts" },
@@ -42,12 +55,13 @@ export default function JoinNow() {
             </div>
           </div>
 
-          <Link href="/wallet" className="block w-full mb-4">
-            <Button className="w-full py-4 rounded-2xl text-lg">
-              <i className="fas fa-flag-checkered mr-2"></i>
-              Join the Race Now
-            </Button>
-          </Link>
+          <Button 
+            onClick={handleJoin}
+            className="w-full py-4 rounded-2xl text-lg mb-4"
+          >
+            <i className="fas fa-flag-checkered mr-2"></i>
+            {isConnected ? 'Go to Dashboard' : 'Join the Race Now'}
+          </Button>
 
           <p className="text-xs text-gray-400">
             Start with as little as $10 • No hidden fees • Instant wallet connection

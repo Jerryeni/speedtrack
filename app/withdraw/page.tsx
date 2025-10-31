@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getUserDetails } from "@/lib/web3/activation";
+import { claimRewardBalance } from "@/lib/web3/rewards";
+import { showToast } from "@/lib/toast";
 import BalanceOverview from "@/components/sections/withdraw/BalanceOverview";
 import WithdrawalForm from "@/components/sections/withdraw/WithdrawalForm";
 import GasFeeInfo from "@/components/sections/withdraw/GasFeeInfo";
@@ -10,8 +14,9 @@ import ProcessingModal from "@/components/modals/ProcessingModal";
 import SuccessModal from "@/components/modals/SuccessModal";
 
 export default function WithdrawPage() {
-  const [poolBalance] = useState(8950.30);
-  const [refBalance] = useState(3530.20);
+  const { account, isConnected, isCorrectChain, refreshBalances } = useWeb3();
+  const [poolBalance, setPoolBalance] = useState(0);
+  const [refBalance, setRefBalance] = useState(0);
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showProcessing, setShowProcessing] = useState(false);
@@ -20,21 +25,49 @@ export default function WithdrawPage() {
 
   const totalBalance = poolBalance + refBalance;
 
+  useEffect(() => {
+    async function fetchBalances() {
+      if (!account || !isConnected || !isCorrectChain) return;
+
+      try {
+        const userData = await getUserDetails(account);
+        setRefBalance(parseFloat(userData.rewardBalance));
+        // Pool balance would come from pool returns
+        setPoolBalance(0); // This would be calculated from completed pools
+      } catch (error) {
+        console.error("Failed to fetch balances:", error);
+      }
+    }
+
+    fetchBalances();
+    const interval = setInterval(fetchBalances, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
   const handleWithdraw = () => {
     if (withdrawAmount < 10) return;
     setShowConfirm(true);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setShowConfirm(false);
     setShowProcessing(true);
 
-    setTimeout(() => {
+    try {
+      showToast("Processing withdrawal...");
+      const tx = await claimRewardBalance();
+      await tx.wait();
+      
+      setTxHash(tx.hash);
       setShowProcessing(false);
-      setTxHash("0x9a8b7c6d5e4f3a2b1c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b");
       setShowSuccess(true);
       setWithdrawAmount(0);
-    }, 5000);
+      await refreshBalances();
+      showToast("Withdrawal successful!");
+    } catch (error: any) {
+      setShowProcessing(false);
+      showToast(error.message || "Failed to withdraw");
+    }
   };
 
   return (
@@ -65,7 +98,7 @@ export default function WithdrawPage() {
         </div>
       </header>
 
-      <BalanceOverview poolBalance={poolBalance} refBalance={refBalance} />
+      <BalanceOverview />
       <WithdrawalForm
         withdrawAmount={withdrawAmount}
         setWithdrawAmount={setWithdrawAmount}

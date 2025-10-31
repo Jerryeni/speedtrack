@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useWeb3 } from "@/lib/web3/Web3Context";
 import WalletOption from "@/components/ui/WalletOption";
 import StatCard from "@/components/ui/StatCard";
 import NetworkCard from "@/components/ui/NetworkCard";
@@ -11,11 +12,25 @@ import WalletConnectSuccessModal from "@/components/modals/WalletConnectSuccessM
 
 export default function WalletPage() {
   const router = useRouter();
+  const { account, isConnected, isCorrectChain, connect, isLoading } = useWeb3();
   const [connectionStep, setConnectionStep] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState("");
-  const [walletAddress, setWalletAddress] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  useEffect(() => {
+    if (isConnected && isCorrectChain) {
+      setConnectionStep(3);
+      if (isConnecting) {
+        setIsConnecting(false);
+        setShowSuccessModal(true);
+      }
+    } else if (isConnected && !isCorrectChain) {
+      setConnectionStep(2);
+    } else {
+      setConnectionStep(1);
+    }
+  }, [isConnected, isCorrectChain]);
 
   const wallets = [
     {
@@ -66,25 +81,31 @@ export default function WalletPage() {
 
   const networks = [
     {
+      name: "BSC Testnet",
+      gas: "5 gwei",
+      icon: "fas fa-coins",
+      iconColor: "text-yellow-600",
+      iconBg: "bg-yellow-600/20",
+      active: true,
+      recommended: true,
+    },
+    {
+      name: "BSC Mainnet",
+      gas: "5 gwei",
+      icon: "fas fa-coins",
+      iconColor: "text-yellow-500",
+      iconBg: "bg-yellow-500/20",
+      active: false,
+      recommended: false,
+    },
+    {
       name: "Ethereum Mainnet",
       gas: "25 gwei",
       icon: "fab fa-ethereum",
       iconColor: "text-blue-600",
       iconBg: "bg-blue-600/20",
-    },
-    {
-      name: "Polygon",
-      gas: "30 gwei",
-      icon: "fas fa-layer-group",
-      iconColor: "text-purple-600",
-      iconBg: "bg-purple-600/20",
-    },
-    {
-      name: "Binance Smart Chain",
-      gas: "5 gwei",
-      icon: "fas fa-coins",
-      iconColor: "text-yellow-600",
-      iconBg: "bg-yellow-600/20",
+      active: false,
+      recommended: false,
     },
   ];
 
@@ -123,18 +144,16 @@ export default function WalletPage() {
     },
   ];
 
-  const handleConnect = (walletName: string) => {
-    setSelectedWallet(walletName);
-    setIsConnecting(true);
-    setConnectionStep(2);
-
-    setTimeout(() => {
-      const randomAddress = `0x${Math.random().toString(16).substring(2, 6).toUpperCase()}...${Math.random().toString(16).substring(2, 6).toUpperCase()}`;
-      setWalletAddress(randomAddress);
+  const handleConnect = async (walletName: string) => {
+    if (walletName === "MetaMask") {
+      setSelectedWallet(walletName);
+      setIsConnecting(true);
+      await connect();
       setIsConnecting(false);
-      setIsConnected(true);
-      setConnectionStep(3);
-    }, 3000);
+    } else {
+      // For other wallets, show coming soon message
+      alert(`${walletName} integration coming soon! Please use MetaMask for now.`);
+    }
   };
 
   const handleCancel = () => {
@@ -143,7 +162,8 @@ export default function WalletPage() {
   };
 
   const handleProceed = () => {
-    router.push("/");
+    setShowSuccessModal(false);
+    router.push("/dashboard");
   };
 
   return (
@@ -171,20 +191,20 @@ export default function WalletPage() {
       </header>
 
       <section className="px-4 mb-6">
-        <div className={`bg-gradient-to-r ${isConnected ? 'from-green-500/20 to-emerald-500/20 border-green-500/30' : 'from-electric-purple/10 to-neon-blue/10 border-electric-purple/20'} rounded-2xl p-4 border`}>
+        <div className={`bg-gradient-to-r ${isConnected && isCorrectChain ? 'from-green-500/20 to-emerald-500/20 border-green-500/30' : 'from-electric-purple/10 to-neon-blue/10 border-electric-purple/20'} rounded-2xl p-4 border`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400' : 'bg-yellow-400 animate-pulse-custom'}`}></div>
-              <span className={`text-sm font-medium ${isConnected ? 'text-green-400' : ''}`}>
-                {isConnected ? 'Wallet Connected Successfully' : 'Initializing Connection'}
+              <div className={`w-3 h-3 rounded-full ${isConnected && isCorrectChain ? 'bg-green-400' : 'bg-yellow-400 animate-pulse-custom'}`}></div>
+              <span className={`text-sm font-medium ${isConnected && isCorrectChain ? 'text-green-400' : ''}`}>
+                {isConnected && isCorrectChain ? 'Wallet Connected Successfully' : isConnected ? 'Switch to BSC Testnet' : 'Initializing Connection'}
               </span>
             </div>
-            <div className={`text-xs ${isConnected ? 'text-green-400' : 'text-gray-400'}`}>
-              {isConnected ? 'Ready to Race' : `Step ${connectionStep} of 3`}
+            <div className={`text-xs ${isConnected && isCorrectChain ? 'text-green-400' : 'text-gray-400'}`}>
+              {isConnected && isCorrectChain ? 'Ready to Race' : `Step ${connectionStep} of 3`}
             </div>
           </div>
           <div className="mt-3 h-2 bg-gray-800 rounded-full overflow-hidden">
-            <div className={`h-full ${isConnected ? 'w-full bg-green-400' : 'racing-track'}`}></div>
+            <div className={`h-full ${isConnected && isCorrectChain ? 'w-full bg-green-400' : 'racing-track'}`}></div>
           </div>
         </div>
       </section>
@@ -328,8 +348,8 @@ export default function WalletPage() {
       />
 
       <WalletConnectSuccessModal
-        isOpen={isConnected}
-        walletAddress={walletAddress}
+        isOpen={showSuccessModal}
+        walletAddress={account || ""}
         walletName={selectedWallet}
         onProceed={handleProceed}
       />

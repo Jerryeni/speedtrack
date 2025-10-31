@@ -1,20 +1,61 @@
 "use client";
 
-interface PoolProgressProps {
-  cycleNumber: number;
-  completion: number;
-  participants: number;
-  totalPool: string;
-  timeLeft: string;
-}
+import { useEffect, useState } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getCurrentPool, getPoolInfo } from "@/lib/web3/pools";
 
-export default function PoolProgress({
-  cycleNumber,
-  completion,
-  participants,
-  totalPool,
-  timeLeft,
-}: PoolProgressProps) {
+export default function PoolProgress() {
+  const { isConnected, isCorrectChain } = useWeb3();
+  const [poolData, setPoolData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPoolData() {
+      if (!isConnected || !isCorrectChain) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const currentPoolNum = await getCurrentPool();
+        const poolInfo = await getPoolInfo(currentPoolNum);
+        setPoolData(poolInfo);
+      } catch (error: any) {
+        console.error("Failed to fetch pool data:", error?.message || error);
+        // Set default pool data on error
+        setPoolData({
+          poolNumber: 1,
+          capacity: '0',
+          currentAmount: '0',
+          filled: false,
+          progress: 0,
+          investorCount: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPoolData();
+    const interval = setInterval(fetchPoolData, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected, isCorrectChain]);
+
+  if (loading || !poolData) {
+    return (
+      <section className="px-4 mb-8">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 border border-gray-700">
+          <div className="text-center text-gray-400">Loading pool data...</div>
+        </div>
+      </section>
+    );
+  }
+
+  const cycleNumber = poolData.poolNumber;
+  const completion = poolData.progress;
+  const participants = poolData.investorCount;
+  const totalPool = `${parseFloat(poolData.currentAmount).toFixed(2)} USDT`;
+  const timeLeft = poolData.filled ? "Completed" : "Active";
   return (
     <section className="px-4 mb-8">
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 border border-gray-700">

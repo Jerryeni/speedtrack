@@ -1,8 +1,34 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getRewardSummary } from "@/lib/web3/rewards";
+
 export default function IncomeSummary() {
+  const { account, isConnected, isCorrectChain } = useWeb3();
+  const [rewardData, setRewardData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchRewards() {
+      if (!account || !isConnected || !isCorrectChain) return;
+      
+      try {
+        const data = await getRewardSummary(account);
+        setRewardData(data);
+      } catch (error) {
+        console.error("Failed to fetch rewards:", error);
+      }
+    }
+
+    fetchRewards();
+    const interval = setInterval(fetchRewards, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
   const summaryCards = [
     {
       title: "Total Earnings",
-      amount: "$24,891.50",
+      amount: `${parseFloat(rewardData?.totalEarned || '0').toFixed(2)} USDT`,
       icon: "fa-coins",
       color: "neon-blue",
       badge: "Total",
@@ -11,8 +37,8 @@ export default function IncomeSummary() {
       animation: "reward-pulse",
     },
     {
-      title: "Daily Income",
-      amount: "$156.75",
+      title: "Daily Reward",
+      amount: `${parseFloat(rewardData?.dailyReward || '0').toFixed(4)} USDT`,
       icon: "fa-chart-line",
       color: "electric-purple",
       badge: "Today",
@@ -21,21 +47,21 @@ export default function IncomeSummary() {
       animation: "",
     },
     {
-      title: "Weekly Income",
-      amount: "$1,098.25",
+      title: "Available to Claim",
+      amount: `${parseFloat(rewardData?.availableToClaim || '0').toFixed(4)} USDT`,
       icon: "fa-calendar-week",
       color: "green-400",
-      badge: "Week",
+      badge: "Claimable",
       progress: 66,
       change: "+8.7%",
       animation: "",
     },
     {
-      title: "Monthly Income",
-      amount: "$4,567.80",
-      icon: "fa-calendar-alt",
+      title: "Level Income",
+      amount: `${parseFloat(rewardData?.levelIncome || '0').toFixed(4)} USDT`,
+      icon: "fa-users",
       color: "yellow-400",
-      badge: "Month",
+      badge: "Referral",
       progress: 75,
       change: "+15.2%",
       animation: "",

@@ -1,5 +1,8 @@
 "use client";
 
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { NETWORK_CONFIG } from "@/lib/web3/config";
+
 interface ConnectionModalProps {
   isOpen: boolean;
   walletName: string;
@@ -11,6 +14,8 @@ export default function ConnectionModal({
   walletName,
   onCancel,
 }: ConnectionModalProps) {
+  const { isCorrectChain } = useWeb3();
+  
   if (!isOpen) return null;
 
   return (
