@@ -19,6 +19,9 @@ export interface NetworkLevel {
 }
 
 export async function getReferralStats(userAddress: string): Promise<ReferralStats> {
+  console.log('=== getReferralStats START ===');
+  console.log('Fetching referral stats for:', userAddress);
+  
   try {
     const speedTrack = await getSpeedTrackReadOnly();
     
@@ -26,6 +29,7 @@ export async function getReferralStats(userAddress: string): Promise<ReferralSta
     let levelIncome = BigInt(0);
     try {
       levelIncome = await speedTrack.getTotalLevelIncome(userAddress);
+      console.log('Level income:', ethers.formatUnits(levelIncome, 6), 'USDT');
     } catch (error) {
       console.error('Error fetching level income:', error);
     }
@@ -35,27 +39,68 @@ export async function getReferralStats(userAddress: string): Promise<ReferralSta
     let totalReferrals = 0;
     
     try {
-      // Get all SponsorRegistered events where this user is the referrer
-      // Event signature: SponsorRegistered(address indexed user, address indexed referrer, ReferralType refType, string referralCode)
-      const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
-      const events = await speedTrack.queryFilter(filter);
+      console.log('Querying SponsorRegistered events...');
       
-      // Count unique users who registered under this referrer
-      const uniqueReferrals = new Set<string>();
-      events.forEach(event => {
-        const eventLog = event as ethers.EventLog;
-        if (eventLog.args && eventLog.args.user) {
-          uniqueReferrals.add(eventLog.args.user.toLowerCase());
+      // METHOD 1: Try filtered query first
+      try {
+        const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
+        const events = await speedTrack.queryFilter(filter);
+        console.log(`Method 1 (filtered): Found ${events.length} events`);
+        
+        if (events.length > 0) {
+          const uniqueReferrals = new Set<string>();
+          events.forEach(event => {
+            const eventLog = event as ethers.EventLog;
+            if (eventLog.args && eventLog.args.user) {
+              uniqueReferrals.add(eventLog.args.user.toLowerCase());
+              console.log('Referred user:', eventLog.args.user);
+            }
+          });
+          directReferrals = uniqueReferrals.size;
         }
-      });
+      } catch (filterError) {
+        console.warn('Filtered query failed, trying full scan:', filterError);
+      }
       
-      directReferrals = uniqueReferrals.size;
+      // METHOD 2: If filtered query returns 0 or fails, query ALL events and filter manually
+      if (directReferrals === 0) {
+        console.log('Trying full event scan...');
+        const filterAll = speedTrack.filters.SponsorRegistered();
+        const allEvents = await speedTrack.queryFilter(filterAll);
+        console.log(`Total SponsorRegistered events in contract: ${allEvents.length}`);
+        
+        // Filter manually for this user as referrer
+        const userReferrals = allEvents.filter(event => {
+          const eventLog = event as ethers.EventLog;
+          const isMatch = eventLog.args?.referrer?.toLowerCase() === userAddress.toLowerCase();
+          if (isMatch) {
+            console.log('Found referral event:', {
+              user: eventLog.args?.user,
+              referrer: eventLog.args?.referrer,
+              block: event.blockNumber
+            });
+          }
+          return isMatch;
+        });
+        
+        console.log(`Method 2 (full scan): Found ${userReferrals.length} events`);
+        
+        // Count unique referred users
+        const uniqueReferrals = new Set<string>();
+        userReferrals.forEach(event => {
+          const eventLog = event as ethers.EventLog;
+          if (eventLog.args?.user) {
+            uniqueReferrals.add(eventLog.args.user.toLowerCase());
+          }
+        });
+        
+        directReferrals = uniqueReferrals.size;
+        console.log('Unique referred users:', Array.from(uniqueReferrals));
+      }
       
-      // For total referrals, we'd need to recursively count all levels
-      // For now, use direct referrals (can be enhanced later)
       totalReferrals = directReferrals;
+      console.log(`FINAL COUNT: ${directReferrals} direct referrals`);
       
-      console.log(`Found ${directReferrals} direct referrals for ${userAddress}`);
     } catch (eventError) {
       console.error('Error querying referral events:', eventError);
     }
@@ -69,7 +114,7 @@ export async function getReferralStats(userAddress: string): Promise<ReferralSta
     // Safe formatting with validation
     const formattedIncome = levelIncome ? ethers.formatUnits(levelIncome, 6) : '0';
 
-    return {
+    const result = {
       totalReferrals,
       totalEarned: formattedIncome,
       levelIncome: formattedIncome,
@@ -78,8 +123,13 @@ export async function getReferralStats(userAddress: string): Promise<ReferralSta
       shortLink,
       referralCode
     };
+    
+    console.log('=== getReferralStats RESULT ===', result);
+    return result;
+    
   } catch (error) {
-    console.error('Error fetching referral stats:', error);
+    console.error('=== getReferralStats FAILED ===');
+    console.error('Error:', error);
     
     // Return safe defaults with referral info
     const { getCodeFromWallet } = await import('./referralCode');
@@ -128,19 +178,46 @@ export async function getNetworkLevels(userAddress: string): Promise<NetworkLeve
     
     // Get direct referrals (Level 1)
     try {
-      const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
-      const events = await speedTrack.queryFilter(filter);
+      let userCount = 0;
       
-      // Count unique users
-      const uniqueUsers = new Set<string>();
-      events.forEach(event => {
-        const eventLog = event as ethers.EventLog;
-        if (eventLog.args && eventLog.args.user) {
-          uniqueUsers.add(eventLog.args.user.toLowerCase());
+      // Try filtered query first
+      try {
+        const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
+        const events = await speedTrack.queryFilter(filter);
+        
+        if (events.length > 0) {
+          const uniqueUsers = new Set<string>();
+          events.forEach(event => {
+            const eventLog = event as ethers.EventLog;
+            if (eventLog.args && eventLog.args.user) {
+              uniqueUsers.add(eventLog.args.user.toLowerCase());
+            }
+          });
+          userCount = uniqueUsers.size;
         }
-      });
+      } catch (filterError) {
+        console.warn('Filtered query failed for network levels');
+      }
       
-      const userCount = uniqueUsers.size;
+      // If filtered query returns 0, try full scan
+      if (userCount === 0) {
+        const filterAll = speedTrack.filters.SponsorRegistered();
+        const allEvents = await speedTrack.queryFilter(filterAll);
+        
+        const userReferrals = allEvents.filter(event => {
+          const eventLog = event as ethers.EventLog;
+          return eventLog.args?.referrer?.toLowerCase() === userAddress.toLowerCase();
+        });
+        
+        const uniqueUsers = new Set<string>();
+        userReferrals.forEach(event => {
+          const eventLog = event as ethers.EventLog;
+          if (eventLog.args?.user) {
+            uniqueUsers.add(eventLog.args.user.toLowerCase());
+          }
+        });
+        userCount = uniqueUsers.size;
+      }
       
       if (userCount > 0) {
         // Calculate estimated earnings for level 1
