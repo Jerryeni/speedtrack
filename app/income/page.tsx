@@ -2,18 +2,12 @@
 
 import { useState } from "react";
 import IncomeSummary from "@/components/sections/income/IncomeSummary";
-import FilterControls from "@/components/sections/income/FilterControls";
 import IncomeBreakdown from "@/components/sections/income/IncomeBreakdown";
 import RecentTransactions from "@/components/sections/income/RecentTransactions";
-import IncomeAnalytics from "@/components/sections/income/IncomeAnalytics";
-import IncomeProjections from "@/components/sections/income/IncomeProjections";
-import IncomeMilestones from "@/components/sections/income/IncomeMilestones";
-import ExportOptions from "@/components/sections/income/ExportOptions";
 
 export default function IncomePage() {
   const [filterType, setFilterType] = useState("all");
   const [filterDate, setFilterDate] = useState("all");
-  const [activeFilter, setActiveFilter] = useState("all");
 
   return (
     <main className="min-h-screen pb-20">
@@ -43,20 +37,8 @@ export default function IncomePage() {
       </header>
 
       <IncomeSummary />
-      <FilterControls
-        filterType={filterType}
-        setFilterType={setFilterType}
-        filterDate={filterDate}
-        setFilterDate={setFilterDate}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
-      />
       <IncomeBreakdown filterType={filterType} />
       <RecentTransactions filterDate={filterDate} />
-      <IncomeAnalytics />
-      <IncomeProjections />
-      <IncomeMilestones />
-      <ExportOptions />
     </main>
   );
 }

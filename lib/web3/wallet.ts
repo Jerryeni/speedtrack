@@ -48,7 +48,7 @@ export async function switchToBSCTestnet(): Promise<void> {
               chainId: NETWORK_CONFIG.chainIdHex,
               chainName: NETWORK_CONFIG.name,
               nativeCurrency: NETWORK_CONFIG.nativeCurrency,
-              rpcUrls: [NETWORK_CONFIG.rpcUrl],
+              rpcUrls: NETWORK_CONFIG.rpcUrls || [NETWORK_CONFIG.rpcUrl],
               blockExplorerUrls: [NETWORK_CONFIG.blockExplorer],
             },
           ],
@@ -67,6 +67,18 @@ export function getProvider(): ethers.BrowserProvider | null {
     return null;
   }
   return new ethers.BrowserProvider(window.ethereum);
+}
+
+// Get a fallback JSON-RPC provider for read-only operations
+export function getFallbackProvider(): ethers.JsonRpcProvider {
+  // Try multiple RPC endpoints for better reliability
+  const rpcUrls = NETWORK_CONFIG.rpcUrls || [NETWORK_CONFIG.rpcUrl];
+  
+  // Use the first RPC URL as primary
+  return new ethers.JsonRpcProvider(rpcUrls[0], {
+    chainId: NETWORK_CONFIG.chainId,
+    name: NETWORK_CONFIG.name,
+  });
 }
 
 export async function getSigner(): Promise<ethers.JsonRpcSigner | null> {

@@ -21,30 +21,71 @@ export interface NetworkLevel {
 export async function getReferralStats(userAddress: string): Promise<ReferralStats> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const [userDetails, levelIncome] = await Promise.all([
-      speedTrack.getUserDetails(userAddress),
-      speedTrack.getLevelIncome(userAddress).catch(() => BigInt(0))
-    ]);
+    
+    // Fetch level income from contract state
+    let levelIncome = BigInt(0);
+    try {
+      levelIncome = await speedTrack.getTotalLevelIncome(userAddress);
+    } catch (error) {
+      console.error('Error fetching level income:', error);
+    }
 
-    // Generate referral link with unique code
+    // Query SponsorRegistered events to count referrals
+    let directReferrals = 0;
+    let totalReferrals = 0;
+    
+    try {
+      // Get all SponsorRegistered events where this user is the referrer
+      // Event signature: SponsorRegistered(address indexed user, address indexed referrer, ReferralType refType, string referralCode)
+      const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
+      const events = await speedTrack.queryFilter(filter);
+      
+      // Count unique users who registered under this referrer
+      const uniqueReferrals = new Set<string>();
+      events.forEach(event => {
+        const eventLog = event as ethers.EventLog;
+        if (eventLog.args && eventLog.args.user) {
+          uniqueReferrals.add(eventLog.args.user.toLowerCase());
+        }
+      });
+      
+      directReferrals = uniqueReferrals.size;
+      
+      // For total referrals, we'd need to recursively count all levels
+      // For now, use direct referrals (can be enhanced later)
+      totalReferrals = directReferrals;
+      
+      console.log(`Found ${directReferrals} direct referrals for ${userAddress}`);
+    } catch (eventError) {
+      console.error('Error querying referral events:', eventError);
+    }
+
+    // Generate referral code and link from wallet address
+    const { getCodeFromWallet } = await import('./referralCode');
+    const referralCode = getCodeFromWallet(userAddress);
     const referralLink = formatReferralLink(userAddress);
     const shortLink = formatShortReferralLink(userAddress);
-    const referralCode = shortLink.split('/').pop() || '';
+
+    // Safe formatting with validation
+    const formattedIncome = levelIncome ? ethers.formatUnits(levelIncome, 6) : '0';
 
     return {
-      totalReferrals: Number(userDetails.totalDirectReferrals || 0),
-      totalEarned: ethers.formatEther(userDetails.totalRewardEarned || BigInt(0)),
-      levelIncome: ethers.formatEther(levelIncome),
-      directReferrals: Number(userDetails.totalDirectReferrals || 0),
+      totalReferrals,
+      totalEarned: formattedIncome,
+      levelIncome: formattedIncome,
+      directReferrals,
       referralLink,
       shortLink,
       referralCode
     };
   } catch (error) {
     console.error('Error fetching referral stats:', error);
+    
+    // Return safe defaults with referral info
+    const { getCodeFromWallet } = await import('./referralCode');
+    const referralCode = getCodeFromWallet(userAddress);
     const referralLink = formatReferralLink(userAddress);
     const shortLink = formatShortReferralLink(userAddress);
-    const referralCode = shortLink.split('/').pop() || '';
     
     return {
       totalReferrals: 0,
@@ -61,106 +102,63 @@ export async function getReferralStats(userAddress: string): Promise<ReferralSta
 export async function getNetworkLevels(userAddress: string): Promise<NetworkLevel[]> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const userDetails = await speedTrack.getUserDetails(userAddress);
     
-    // Get direct referrals count
-    const directReferrals = Number(userDetails.totalDirectReferrals || 0);
-    
-    // Get total reward earned (this includes all level commissions)
-    const totalRewardEarned = ethers.formatEther(userDetails.totalRewardEarned || BigInt(0));
+    // Fetch total level income
+    let levelIncome = BigInt(0);
+    try {
+      levelIncome = await speedTrack.getTotalLevelIncome(userAddress);
+    } catch (error) {
+      console.error('Error fetching level income:', error);
+    }
     
     // Get level percentages from contract
-    const levelPercentages = await speedTrack.getLevelPercentages().catch(() => 
-      [10, 5, 3, 2, 1, 1, 1, 1, 1, 1]
-    );
+    const levelPercentages: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      try {
+        const pct = await speedTrack.levelPercents(i);
+        levelPercentages.push(Number(pct));
+      } catch {
+        // Default percentages if contract call fails
+        levelPercentages.push([10, 5, 3, 2, 1, 1, 1, 1, 1, 1][i]);
+      }
+    }
     
     const levels: NetworkLevel[] = [];
+    const totalEarned = levelIncome ? parseFloat(ethers.formatUnits(levelIncome, 6)) : 0;
     
-    // If user has no referrals, return empty array
-    if (directReferrals === 0) {
-      return levels;
-    }
-    
-    // Try to get actual referral addresses to count real network levels
-    let level1Count = directReferrals;
-    let level2Count = 0;
-    let level3Count = 0;
-    
+    // Get direct referrals (Level 1)
     try {
-      // Try to get referral list if the contract has this method
-      const referralList = await speedTrack.getReferrals(userAddress).catch(() => []);
+      const filter = speedTrack.filters.SponsorRegistered(null, userAddress);
+      const events = await speedTrack.queryFilter(filter);
       
-      if (referralList && referralList.length > 0) {
-        level1Count = referralList.length;
-        
-        // Count level 2 referrals (referrals of referrals)
-        const level2Promises = referralList.map((ref: string) => 
-          speedTrack.getReferrals(ref).catch(() => [])
-        );
-        const level2Results = await Promise.all(level2Promises);
-        level2Count = level2Results.reduce((sum, refs) => sum + refs.length, 0);
-        
-        // Count level 3 referrals
-        if (level2Count > 0) {
-          const allLevel2Refs = level2Results.flat();
-          const level3Promises = allLevel2Refs.map((ref: string) => 
-            speedTrack.getReferrals(ref).catch(() => [])
-          );
-          const level3Results = await Promise.all(level3Promises);
-          level3Count = level3Results.reduce((sum, refs) => sum + refs.length, 0);
+      // Count unique users
+      const uniqueUsers = new Set<string>();
+      events.forEach(event => {
+        const eventLog = event as ethers.EventLog;
+        if (eventLog.args && eventLog.args.user) {
+          uniqueUsers.add(eventLog.args.user.toLowerCase());
         }
+      });
+      
+      const userCount = uniqueUsers.size;
+      
+      if (userCount > 0) {
+        // Calculate estimated earnings for level 1
+        const level1Percentage = levelPercentages[0] || 10;
+        const level1Earned = totalEarned > 0 
+          ? ((totalEarned * level1Percentage) / 100).toFixed(2)
+          : '0.00';
+        
+        levels.push({
+          level: 1,
+          users: userCount,
+          earned: level1Earned
+        });
+        
+        console.log(`Level 1: ${userCount} users, $${level1Earned} earned`);
       }
-    } catch (error) {
-      // If getReferrals doesn't exist, estimate based on direct referrals
-      console.log('Using estimated network counts');
-      level2Count = Math.floor(directReferrals * 1.5);
-      level3Count = Math.floor(level2Count * 0.8);
-    }
-    
-    // Calculate earnings per level based on percentages and total earned
-    const totalPercentage = levelPercentages.slice(0, 10).reduce((sum: number, p: any) => sum + Number(p), 0);
-    const totalEarned = parseFloat(totalRewardEarned);
-    
-    // Level 1 - Direct referrals
-    if (level1Count > 0) {
-      const level1Percentage = Number(levelPercentages[0] || 10);
-      const level1Earned = totalEarned > 0 
-        ? (totalEarned * level1Percentage / totalPercentage).toFixed(2)
-        : '0.00';
-      
-      levels.push({
-        level: 1,
-        users: level1Count,
-        earned: level1Earned
-      });
-    }
-    
-    // Level 2
-    if (level2Count > 0) {
-      const level2Percentage = Number(levelPercentages[1] || 5);
-      const level2Earned = totalEarned > 0
-        ? (totalEarned * level2Percentage / totalPercentage).toFixed(2)
-        : '0.00';
-      
-      levels.push({
-        level: 2,
-        users: level2Count,
-        earned: level2Earned
-      });
-    }
-    
-    // Level 3
-    if (level3Count > 0) {
-      const level3Percentage = Number(levelPercentages[2] || 3);
-      const level3Earned = totalEarned > 0
-        ? (totalEarned * level3Percentage / totalPercentage).toFixed(2)
-        : '0.00';
-      
-      levels.push({
-        level: 3,
-        users: level3Count,
-        earned: level3Earned
-      });
+    } catch (eventError) {
+      console.error('Error querying network events:', eventError);
     }
     
     return levels;
@@ -170,9 +168,8 @@ export async function getNetworkLevels(userAddress: string): Promise<NetworkLeve
   }
 }
 
-export async function getReferralClicks(userAddress: string): Promise<number> {
+export async function getReferralClicks(_userAddress: string): Promise<number> {
   // This would require backend tracking or events
-  // For now, return 0 as placeholder
   return 0;
 }
 

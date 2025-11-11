@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
 import { checkAccountActivation, getUserDetails } from "@/lib/web3/activation";
 import { getRewardSummary } from "@/lib/web3/rewards";
-import { getCurrentPool } from "@/lib/web3/pools";
-import { useTransactions } from "@/lib/web3/hooks/useTransactions";
-import { formatTimestamp, getTransactionStyle } from "@/lib/web3/events";
+import { getRecentActions, formatActionType, formatTimestamp } from "@/lib/web3/transactions";
 import { NETWORK_CONFIG } from "@/lib/web3/config";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import BottomNav from "@/components/layout/BottomNav";
@@ -19,33 +17,45 @@ import ActivationModal from "@/components/modals/ActivationModal";
 import PoolInvestModal from "@/components/modals/PoolInvestModal";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
+import FlowGuard from "@/components/guards/FlowGuard";
 
 export default function DashboardPage() {
+  return (
+    <FlowGuard requireComplete={true}>
+      <DashboardContent />
+    </FlowGuard>
+  );
+}
+
+function DashboardContent() {
   const { account, isConnected, isCorrectChain } = useWeb3();
-  const { transactions, isLoading: txLoading } = useTransactions(5);
   const [isActivated, setIsActivated] = useState(false);
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [showInvestModal, setShowInvestModal] = useState(false);
   const [currentPool, setCurrentPool] = useState(1);
   const [userData, setUserData] = useState<any>(null);
   const [rewardData, setRewardData] = useState<any>(null);
+  const [recentActions, setRecentActions] = useState<any[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       if (!account || !isConnected || !isCorrectChain) return;
 
       try {
-        const [activated, userDetails, rewards, poolNum] = await Promise.all([
+        setTxLoading(true);
+        const [activated, userDetails, rewards, actions] = await Promise.all([
           checkAccountActivation(account),
           getUserDetails(account).catch(() => null),
           getRewardSummary(account).catch(() => null),
-          getCurrentPool().catch(() => 1)
+          getRecentActions(account).catch(() => [])
         ]);
 
         setIsActivated(activated);
         setUserData(userDetails);
         setRewardData(rewards);
-        setCurrentPool(poolNum);
+        setRecentActions(actions.slice(0, 5));
+        setCurrentPool(1); // Default to pool 1 for now
 
         // CRITICAL: Force activation modal for non-activated users
         if (!activated) {
@@ -53,6 +63,8 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
+      } finally {
+        setTxLoading(false);
       }
     }
 
@@ -157,7 +169,7 @@ export default function DashboardPage() {
             layout="box"
             icon="fa-coins"
             color="text-electric-purple"
-            value={`${parseFloat(userData?.totalInvestment || '0').toFixed(2)} USDT`}
+            value={`${parseFloat(userData?.investedAmount || '0').toFixed(2)} USDT`}
             label="Total Investment"
             badge="Invested"
             badgeColor="bg-electric-purple/20 text-electric-purple"
@@ -205,10 +217,10 @@ export default function DashboardPage() {
 
       <DailyRewardTimer />
 
-      {isConnected && isCorrectChain && transactions.length > 0 && (
+      {isConnected && isCorrectChain && (
         <section className="px-4 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-orbitron font-bold">Recent Transactions</h3>
+            <h3 className="text-lg font-orbitron font-bold">Recent Activity</h3>
             <Link href="/transactions">
               <button className="text-electric-purple text-sm font-medium">View All</button>
             </Link>
@@ -216,15 +228,15 @@ export default function DashboardPage() {
 
           <div className="space-y-3">
             {txLoading ? (
-              <div className="text-center text-gray-400 py-4">Loading transactions...</div>
-            ) : transactions.length === 0 ? (
-              <div className="text-center text-gray-400 py-4">No transactions yet</div>
+              <div className="text-center text-gray-400 py-4">Loading activity...</div>
+            ) : recentActions.length === 0 ? (
+              <div className="text-center text-gray-400 py-4">No activity yet</div>
             ) : (
-              transactions.map((tx) => {
-                const style = getTransactionStyle(tx.type);
+              recentActions.map((action, index) => {
+                const style = formatActionType(action.action);
                 return (
                   <div
-                    key={tx.id}
+                    key={index}
                     className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700"
                   >
                     <div className="flex items-center justify-between">
@@ -233,23 +245,17 @@ export default function DashboardPage() {
                           <i className={`fas ${style.icon} ${style.color}`}></i>
                         </div>
                         <div>
-                          <p className="font-semibold text-sm">{tx.title}</p>
-                          <p className="text-xs text-gray-400">{formatTimestamp(tx.timestamp)}</p>
+                          <p className="font-semibold text-sm">{style.title}</p>
+                          <p className="text-xs text-gray-400">{formatTimestamp(action.timestamp)}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`font-bold text-sm ${style.color}`}>{tx.amount}</p>
-                        {tx.usdValue && (
-                          <p className="text-xs text-gray-400">{tx.usdValue}</p>
+                        <p className={`font-bold text-sm ${style.color}`}>
+                          {parseFloat(action.amount).toFixed(4)} USDT
+                        </p>
+                        {action.poolIndex > 0 && (
+                          <p className="text-xs text-gray-400">Pool #{action.poolIndex}</p>
                         )}
-                        <a
-                          href={`${NETWORK_CONFIG.blockExplorer}/tx/${tx.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-neon-blue hover:underline"
-                        >
-                          View
-                        </a>
                       </div>
                     </div>
                   </div>

@@ -82,30 +82,12 @@ export default function WalletPage() {
   const networks = [
     {
       name: "BSC Testnet",
-      gas: "5 gwei",
+      gas: "~5 gwei",
       icon: "fas fa-coins",
       iconColor: "text-yellow-600",
       iconBg: "bg-yellow-600/20",
       active: true,
       recommended: true,
-    },
-    {
-      name: "BSC Mainnet",
-      gas: "5 gwei",
-      icon: "fas fa-coins",
-      iconColor: "text-yellow-500",
-      iconBg: "bg-yellow-500/20",
-      active: false,
-      recommended: false,
-    },
-    {
-      name: "Ethereum Mainnet",
-      gas: "25 gwei",
-      icon: "fab fa-ethereum",
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-600/20",
-      active: false,
-      recommended: false,
     },
   ];
 
@@ -269,59 +251,7 @@ export default function WalletPage() {
         </div>
       </section>
 
-      <section className="px-4 mb-8">
-        <h3 className="text-lg font-orbitron font-bold mb-4">Connection Statistics</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <StatCard
-            layout="box"
-            icon="fa-users"
-            color="text-neon-blue"
-            value="24,891"
-            label="Connected Wallets"
-            badge="Live"
-            badgeColor="bg-neon-blue/20 text-neon-blue"
-            gradient="from-neon-blue/10"
-            border="border-neon-blue/20"
-            progress={75}
-          />
-          <StatCard
-            layout="box"
-            icon="fa-bolt"
-            color="text-electric-purple"
-            value="0.8s"
-            label="Avg Connection Time"
-            badge="Fast"
-            badgeColor="bg-electric-purple/20 text-electric-purple"
-            gradient="from-electric-purple/10"
-            border="border-electric-purple/20"
-            progress={80}
-          />
-          <StatCard
-            layout="box"
-            icon="fa-check-circle"
-            color="text-green-400"
-            value="99.9%"
-            label="Success Rate"
-            badge="High"
-            badgeColor="bg-green-500/20 text-green-400"
-            gradient="from-green-500/10"
-            border="border-green-500/20"
-            progress={100}
-          />
-          <StatCard
-            layout="box"
-            icon="fa-network-wired"
-            color="text-yellow-400"
-            value="15"
-            label="Supported Networks"
-            badge="Multi"
-            badgeColor="bg-yellow-500/20 text-yellow-400"
-            gradient="from-yellow-500/10"
-            border="border-yellow-500/20"
-            progress={60}
-          />
-        </div>
-      </section>
+
 
       <section className="px-4 mb-8">
         <h3 className="text-lg font-orbitron font-bold mb-4">Supported Networks</h3>

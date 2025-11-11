@@ -86,33 +86,25 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
           </button>
         </div>
 
-        {/* Balance Display */}
+        {/* Balance Display - ST Token Only */}
         {account && (
           <div className="p-4 border-b border-gray-700">
-            <p className="text-xs text-gray-400 mb-2">Your Balances</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <i className="fas fa-dollar-sign text-green-400 text-xs"></i>
-                  </div>
-                  <span className="text-sm text-gray-300">USDT</span>
+            <p className="text-xs text-gray-400 mb-2">Your Balance</p>
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full bg-neon-blue/20 flex items-center justify-center">
+                  <i className="fas fa-coins text-neon-blue text-xs"></i>
                 </div>
-                <span className="text-sm font-bold text-green-400">
-                  {parseFloat(balances.usdt).toFixed(2)}
-                </span>
+                <span className="text-sm text-gray-300">ST Token</span>
               </div>
-              <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-neon-blue/20 flex items-center justify-center">
-                    <i className="fas fa-coins text-neon-blue text-xs"></i>
-                  </div>
-                  <span className="text-sm text-gray-300">ST</span>
-                </div>
-                <span className="text-sm font-bold text-neon-blue">
-                  {parseFloat(balances.st).toFixed(2)}
-                </span>
-              </div>
+              <span className="text-xs font-bold text-neon-blue truncate max-w-[100px]">
+                {(() => {
+                  const val = parseFloat(balances.st || '0');
+                  if (val >= 1000000) return `${(val / 1000000).toFixed(2)}M`;
+                  if (val >= 1000) return `${(val / 1000).toFixed(2)}K`;
+                  return val.toFixed(2);
+                })()}
+              </span>
             </div>
           </div>
         )}

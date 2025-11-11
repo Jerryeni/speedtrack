@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useTransactions } from "@/lib/web3/hooks/useTransactions";
-import { formatTimestamp, getTransactionStyle, Transaction } from "@/lib/web3/events";
-import { NETWORK_CONFIG } from "@/lib/web3/config";
+import { useState, useMemo, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getRecentActions, formatActionType, formatTimestamp } from "@/lib/web3/transactions";
 import TransactionSummary from "@/components/sections/transactions/TransactionSummary";
 import FilterControls from "@/components/sections/transactions/FilterControls";
 import ExportOptions from "@/components/sections/transactions/ExportOptions";
-import TransactionModal from "@/components/modals/TransactionModal";
 
 export default function TransactionsPage() {
-  const { transactions, isLoading } = useTransactions(50);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const { account, isConnected, isCorrectChain } = useWeb3();
+  const [recentActions, setRecentActions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState({
     type: "all",
     status: "all",
@@ -20,21 +19,41 @@ export default function TransactionsPage() {
     period: "all",
   });
 
+  useEffect(() => {
+    async function fetchActions() {
+      if (!account || !isConnected || !isCorrectChain) return;
+      
+      try {
+        setIsLoading(true);
+        const actions = await getRecentActions(account);
+        setRecentActions(actions);
+      } catch (error) {
+        console.error("Failed to fetch actions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchActions();
+    const interval = setInterval(fetchActions, 30000);
+    return () => clearInterval(interval);
+  }, [account, isConnected, isCorrectChain]);
+
   // Filter transactions based on selected filters
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
+    return recentActions.filter(action => {
       if (filters.type !== "all") {
-        const typeMap: Record<string, Transaction['type'][]> = {
-          'deposit': ['pool_invest'],
-          'withdrawal': ['reward_claim'],
-          'trade': ['st_buy', 'st_sell'],
-          'reward': ['reward_claim'],
+        const typeMap: Record<string, string[]> = {
+          'deposit': ['INVEST'],
+          'withdrawal': ['ROI_CLAIM', 'CAPITAL_RETURN'],
+          'reward': ['LEVEL_INCOME', 'ST_REWARD'],
+          'activation': ['ACTIVATION', 'PROFILE_COMPLETE'],
         };
-        if (!typeMap[filters.type]?.includes(tx.type)) return false;
+        if (!typeMap[filters.type]?.includes(action.action)) return false;
       }
       return true;
     });
-  }, [transactions, filters]);
+  }, [recentActions, filters]);
 
   return (
     <main className="min-h-screen pb-20">
@@ -63,7 +82,7 @@ export default function TransactionsPage() {
         </div>
       </header>
 
-      <TransactionSummary transactions={transactions} />
+      <TransactionSummary transactions={recentActions} />
       <FilterControls filters={filters} setFilters={setFilters} />
 
       <section className="px-4 mb-8">
@@ -79,13 +98,12 @@ export default function TransactionsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredTransactions.map((tx) => {
-              const style = getTransactionStyle(tx.type);
+            {filteredTransactions.map((action, index) => {
+              const style = formatActionType(action.action);
               return (
                 <div
-                  key={tx.id}
-                  onClick={() => setSelectedTransaction(tx)}
-                  className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700 cursor-pointer hover:border-neon-blue/50 transition-all"
+                  key={index}
+                  className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700 hover:border-neon-blue/50 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -93,23 +111,21 @@ export default function TransactionsPage() {
                         <i className={`fas ${style.icon} ${style.color} text-lg`}></i>
                       </div>
                       <div>
-                        <p className="font-semibold">{tx.title}</p>
-                        <p className="text-xs text-gray-400">{formatTimestamp(tx.timestamp)}</p>
-                        <a
-                          href={`${NETWORK_CONFIG.blockExplorer}/tx/${tx.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-neon-blue hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {tx.txHash.slice(0, 10)}...{tx.txHash.slice(-8)}
-                        </a>
+                        <p className="font-semibold">{style.title}</p>
+                        <p className="text-xs text-gray-400">{formatTimestamp(action.timestamp)}</p>
+                        {action.fromUser !== "0x0000000000000000000000000000000000000000" && (
+                          <p className="text-xs text-gray-500">
+                            From: {action.fromUser.slice(0, 6)}...{action.fromUser.slice(-4)}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold ${style.color}`}>{tx.amount}</p>
-                      {tx.usdValue && (
-                        <p className="text-sm text-gray-400">{tx.usdValue}</p>
+                      <p className={`font-bold ${style.color}`}>
+                        {parseFloat(action.amount).toFixed(4)} USDT
+                      </p>
+                      {action.poolIndex > 0 && (
+                        <p className="text-sm text-gray-400">Pool #{action.poolIndex}</p>
                       )}
                       <div className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full mt-1 inline-block">
                         Success

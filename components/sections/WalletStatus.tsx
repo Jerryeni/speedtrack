@@ -41,8 +41,15 @@ export default function WalletStatus() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-white">{parseFloat(balances.bnb).toFixed(4)} BNB</p>
-            <p className="text-xs text-gray-400">{parseFloat(balances.usdt).toFixed(2)} USDT</p>
+            <p className="text-sm font-bold text-white">{parseFloat(balances.bnb || '0').toFixed(4)} BNB</p>
+            <p className="text-xs text-gray-400">
+              {(() => {
+                const val = parseFloat(balances.usdt || '0');
+                if (val >= 1000000) return `${(val / 1000000).toFixed(2)}M`;
+                if (val >= 1000) return `${(val / 1000).toFixed(2)}K`;
+                return val.toFixed(2);
+              })()} USDT
+            </p>
           </div>
         </div>
       </div>

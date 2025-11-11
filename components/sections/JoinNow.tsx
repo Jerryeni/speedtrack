@@ -2,18 +2,65 @@
 
 import { useRouter } from "next/navigation";
 import { useWeb3 } from "@/lib/web3/Web3Context";
+import { useState, useEffect } from "react";
 import IconCircle from "@/components/ui/IconCircle";
 import Button from "@/components/ui/Button";
 
 export default function JoinNow() {
   const router = useRouter();
-  const { isConnected, connect } = useWeb3();
+  const { isConnected, connect, account } = useWeb3();
+  const [userStatus, setUserStatus] = useState<'unknown' | 'new' | 'registered' | 'activated'>('unknown');
+
+  useEffect(() => {
+    async function checkStatus() {
+      if (!account || !isConnected) {
+        setUserStatus('new');
+        return;
+      }
+
+      try {
+        const { checkAccountActivation, isUserRegistered } = await import('@/lib/web3/activation');
+        
+        // Check if registered first
+        const isRegistered = await isUserRegistered(account);
+        if (!isRegistered) {
+          setUserStatus('new');
+          return;
+        }
+        
+        // Check if activated
+        const isActivated = await checkAccountActivation(account);
+        if (isActivated) {
+          setUserStatus('activated');
+          return;
+        }
+
+        // Registered but not activated
+        setUserStatus('registered');
+      } catch (error) {
+        console.error('Error checking user status:', error);
+        setUserStatus('new');
+      }
+    }
+
+    checkStatus();
+  }, [account, isConnected]);
 
   const handleJoin = async () => {
     if (!isConnected) {
       await connect();
-    } else {
+    } else if (userStatus === 'new') {
+      // Not registered - show registration modal
+      router.push('/?register=true');
+    } else if (userStatus === 'registered') {
+      // Registered but not activated - go to activation page
+      router.push('/activate');
+    } else if (userStatus === 'activated') {
+      // Fully activated - go to dashboard
       router.push('/dashboard');
+    } else {
+      // Unknown status - show registration
+      router.push('/?register=true');
     }
   };
   const features = [
@@ -59,8 +106,22 @@ export default function JoinNow() {
             onClick={handleJoin}
             className="w-full py-4 rounded-2xl text-lg mb-4"
           >
-            <i className="fas fa-flag-checkered mr-2"></i>
-            {isConnected ? 'Go to Dashboard' : 'Join the Race Now'}
+            {userStatus === 'registered' ? (
+              <>
+                <i className="fas fa-rocket mr-2"></i>
+                Activate Your Account
+              </>
+            ) : userStatus === 'activated' ? (
+              <>
+                <i className="fas fa-tachometer-alt mr-2"></i>
+                Go to Dashboard
+              </>
+            ) : (
+              <>
+                <i className="fas fa-flag-checkered mr-2"></i>
+                {isConnected ? 'Register Now' : 'Join the Race Now'}
+              </>
+            )}
           </Button>
 
           <p className="text-xs text-gray-400">

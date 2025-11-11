@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
 import { getUserDetails } from "@/lib/web3/activation";
-import { getLevelIncome } from "@/lib/web3/rewards";
+import { getTotalLevelIncome } from "@/lib/web3/rewards";
 
 interface ReferralOverviewProps {
   stats: any;

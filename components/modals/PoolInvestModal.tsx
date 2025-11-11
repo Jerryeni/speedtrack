@@ -52,7 +52,7 @@ export default function PoolInvestModal({
       setIsInvesting(true);
       showToast("Processing investment...");
       
-      const tx = await investInPool(amount, account);
+      const tx = await investInPool(poolNumber, amount, account);
       await tx.wait();
       
       showToast("Investment successful!");
@@ -91,7 +91,7 @@ export default function PoolInvestModal({
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-400">Your USDT Balance</span>
             <span className="text-sm font-bold text-green-400">
-              {parseFloat(balances.usdt).toFixed(2)} USDT
+              {parseFloat(balances.usdt || '0').toFixed(2)} USDT
             </span>
           </div>
           <div className="flex justify-between items-center">

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
-import { getUserDetails } from "@/lib/web3/activation";
-import { claimRewardBalance } from "@/lib/web3/rewards";
+import { claimROI, getRewardSummary } from "@/lib/web3/rewards";
 import { showToast } from "@/lib/toast";
 import BalanceOverview from "@/components/sections/withdraw/BalanceOverview";
 import WithdrawalForm from "@/components/sections/withdraw/WithdrawalForm";
@@ -30,8 +29,9 @@ export default function WithdrawPage() {
       if (!account || !isConnected || !isCorrectChain) return;
 
       try {
-        const userData = await getUserDetails(account);
-        setRefBalance(parseFloat(userData.rewardBalance));
+        const rewardData = await getRewardSummary(account);
+        // Available to claim includes both ROI and level income
+        setRefBalance(parseFloat(rewardData.availableToClaim));
         // Pool balance would come from pool returns
         setPoolBalance(0); // This would be calculated from completed pools
       } catch (error) {
@@ -54,8 +54,8 @@ export default function WithdrawPage() {
     setShowProcessing(true);
 
     try {
-      showToast("Processing withdrawal...");
-      const tx = await claimRewardBalance();
+      showToast("Processing withdrawal...", "info");
+      const tx = await claimROI();
       await tx.wait();
       
       setTxHash(tx.hash);

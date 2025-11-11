@@ -2,35 +2,40 @@
 
 import { useState, useEffect } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
-import { getUserDetails } from "@/lib/web3/activation";
-import { getLevelIncome } from "@/lib/web3/rewards";
+import { getReferralStats } from "@/lib/web3/referrals";
 import Link from "next/link";
 
 export default function ReferralProgram() {
   const { account, isConnected, isCorrectChain } = useWeb3();
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [referralData, setReferralData] = useState({
     totalReferrals: 0,
-    levelIncome: "0"
+    levelIncome: "0",
+    referralLink: "Connect wallet to get your link",
+    referralCode: "N/A"
   });
-
-  const referralLink = account 
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/ref/${account}`
-    : "Connect wallet to get your link";
 
   useEffect(() => {
     async function fetchData() {
-      if (!account || !isConnected || !isCorrectChain) return;
+      if (!account || !isConnected || !isCorrectChain) {
+        setReferralData({
+          totalReferrals: 0,
+          levelIncome: "0",
+          referralLink: "Connect wallet to get your link",
+          referralCode: "N/A"
+        });
+        return;
+      }
 
       try {
-        const [userData, income] = await Promise.all([
-          getUserDetails(account),
-          getLevelIncome(account)
-        ]);
-
+        const stats = await getReferralStats(account);
+        
         setReferralData({
-          totalReferrals: parseInt(userData.totalDirectReferrals),
-          levelIncome: income
+          totalReferrals: stats.totalReferrals,
+          levelIncome: stats.levelIncome,
+          referralLink: stats.referralLink,
+          referralCode: stats.referralCode
         });
       } catch (error) {
         console.error("Failed to fetch referral data:", error);
@@ -44,9 +49,16 @@ export default function ReferralProgram() {
 
   const copyLink = () => {
     if (!account) return;
-    navigator.clipboard.writeText(referralLink);
+    navigator.clipboard.writeText(referralData.referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyCode = () => {
+    if (!account) return;
+    navigator.clipboard.writeText(referralData.referralCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -81,26 +93,57 @@ export default function ReferralProgram() {
           </div>
         </div>
 
+        {/* Referral Code */}
+        <div className="bg-gray-800 rounded-2xl p-4 mb-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-400">Your referral code</p>
+              <button
+                onClick={copyCode}
+                disabled={!account}
+                className="min-w-[44px] min-h-[44px] bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl px-4 py-2 text-white text-sm font-medium transition-colors active:scale-95"
+              >
+                <i className="fas fa-copy"></i>
+              </button>
+            </div>
+            <div className="bg-gray-900 rounded-lg p-3 text-center">
+              <p className="font-mono text-2xl font-bold text-purple-400 tracking-wider">
+                {referralData.referralCode}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Referral Link */}
         <div className="bg-gray-800 rounded-2xl p-4 mb-4">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-400">Your referral link</p>
               <button
                 onClick={copyLink}
-                className="min-w-[44px] min-h-[44px] bg-purple-500 hover:bg-purple-600 rounded-xl px-4 py-2 text-white text-sm font-medium transition-colors active:scale-95"
+                disabled={!account}
+                className="min-w-[44px] min-h-[44px] bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl px-4 py-2 text-white text-sm font-medium transition-colors active:scale-95"
               >
                 <i className="fas fa-copy"></i>
               </button>
             </div>
             <div className="bg-gray-900 rounded-lg p-2 overflow-x-auto">
-              <p className="font-mono text-xs text-gray-300 whitespace-nowrap">{referralLink}</p>
+              <p className="font-mono text-xs text-gray-300 whitespace-nowrap break-all">
+                {referralData.referralLink}
+              </p>
             </div>
           </div>
         </div>
 
         {copied && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium z-50">
-            Referral link copied!
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium z-50 shadow-lg">
+            <i className="fas fa-check mr-2"></i>Referral link copied!
+          </div>
+        )}
+
+        {copiedCode && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium z-50 shadow-lg">
+            <i className="fas fa-check mr-2"></i>Referral code copied!
           </div>
         )}
 

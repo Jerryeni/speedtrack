@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../Web3Context';
 import { getUserDetails } from '../activation';
 import { getRewardSummary } from '../rewards';
-import { getCurrentPool, getPoolInfo, getUserPoolInvestments } from '../pools';
+import { getPoolInfo } from '../pools';
+import { getPlatformStatistics } from '../events';
 
 export function useUserData() {
   const { account, isConnected, isCorrectChain } = useWeb3();
@@ -25,20 +26,19 @@ export function useUserData() {
         setIsLoading(true);
         setError(null);
 
-        const [user, rewards, currentPoolNum] = await Promise.all([
+        const [user, rewards, platformStats] = await Promise.all([
           getUserDetails(account),
           getRewardSummary(account),
-          getCurrentPool()
+          getPlatformStatistics()
         ]);
 
-        const [currentPool, userInvestments] = await Promise.all([
-          getPoolInfo(currentPoolNum),
-          getUserPoolInvestments(account)
-        ]);
+        // Use the active pools count from platform stats
+        const currentPoolNum = platformStats.activePools || 1;
+        const currentPool = await getPoolInfo(currentPoolNum);
 
         setUserData(user);
         setRewardData(rewards);
-        setPoolData({ current: currentPool, investments: userInvestments });
+        setPoolData({ current: currentPool, currentPoolNum });
       } catch (err: any) {
         setError(err.message || 'Failed to fetch user data');
         console.error('Error fetching user data:', err);
@@ -60,6 +60,7 @@ export function useUserData() {
     poolData,
     isLoading,
     error,
-    isActivated: userData?.activated || false
+    isActivated: userData?.activationLevel > 0 || false,
+    isRegistered: userData?.isRegistered || false
   };
 }

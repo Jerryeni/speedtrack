@@ -6,7 +6,6 @@ import { getReferralStats, getNetworkLevels } from "@/lib/web3/referrals";
 import ShareStats from "@/components/sections/share/ShareStats";
 import BonusHighlights from "@/components/sections/share/BonusHighlights";
 import ShareLink from "@/components/sections/share/ShareLink";
-import ShareBanners from "@/components/sections/share/ShareBanners";
 import SocialShare from "@/components/sections/share/SocialShare";
 import NetworkTree from "@/components/sections/share/NetworkTree";
 import ShareSuccessModal from "@/components/modals/ShareSuccessModal";
@@ -128,7 +127,6 @@ export default function SharePage() {
         referralCode={referralStats?.referralCode}
         isLoading={isLoading}
       />
-      <ShareBanners onShare={handleShare} />
       <SocialShare onShare={handleShare} />
       <NetworkTree 
         levels={networkLevels}

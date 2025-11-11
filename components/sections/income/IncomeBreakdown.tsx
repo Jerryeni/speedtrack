@@ -1,3 +1,8 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getRewardSummary } from "@/lib/web3/rewards";
 import IncomeCard from "@/components/ui/IncomeCard";
 
 interface IncomeBreakdownProps {
@@ -5,59 +10,81 @@ interface IncomeBreakdownProps {
 }
 
 export default function IncomeBreakdown({ filterType }: IncomeBreakdownProps) {
+  const { account, isConnected } = useWeb3();
+  const [rewardData, setRewardData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!account || !isConnected) return;
+      
+      try {
+        const data = await getRewardSummary(account);
+        setRewardData(data);
+      } catch (error) {
+        console.error('Error fetching reward data:', error);
+      }
+    }
+
+    fetchData();
+  }, [account, isConnected]);
+
+  const totalEarned = parseFloat(rewardData?.totalEarned || '0');
+  const levelIncome = parseFloat(rewardData?.levelIncome || '0');
+  const capitalReturned = parseFloat(rewardData?.capitalReturned || '0');
+
   const incomeTypes = [
     {
-      title: "Pool Income",
-      description: "Investment pool earnings",
-      amount: "$12,450.30",
-      change: "+24.5%",
-      icon: "fa-swimming-pool",
+      title: "ROI Income",
+      description: "Daily ROI earnings from investments",
+      amount: `$${totalEarned.toFixed(2)}`,
+      change: "+0.5% daily",
+      icon: "fa-chart-line",
       color: "neon-blue",
       stats: [
-        { label: "Active Pools", value: "8" },
-        { label: "Avg. ROI", value: "18.5%" },
-        { label: "Next Payout", value: "2h 15m" },
+        { label: "Daily Rate", value: "0.5%" },
+        { label: "Total Earned", value: `$${totalEarned.toFixed(2)}` },
+        { label: "Status", value: "Active" },
       ],
-      progressLabel: "Pool Performance",
-      progressValue: "87% Complete",
-      progressPercent: 87,
-      actionLabel: "View Pool Details",
+      progressLabel: "ROI Progress",
+      progressValue: "Earning Daily",
+      progressPercent: 50,
+      actionLabel: "View ROI Details",
       badgeIcon: "fa-trending-up",
-      badgeText: "Trending Up",
+      badgeText: "Active",
     },
     {
       title: "Level Income",
       description: "Referral level commissions",
-      amount: "$8,765.90",
-      change: "+16.2%",
+      amount: `$${levelIncome.toFixed(2)}`,
+      change: "10 Levels",
       icon: "fa-layer-group",
       color: "electric-purple",
       stats: [
-        { label: "Active Levels", value: "12" },
-        { label: "Team Size", value: "156" },
-        { label: "Commission", value: "8.5%" },
+        { label: "Total Earned", value: `$${levelIncome.toFixed(2)}` },
+        { label: "Levels", value: "10" },
+        { label: "Status", value: "Active" },
       ],
       progressLabel: "Level Progress",
-      progressValue: "Level 12 of 15",
-      progressPercent: 80,
+      progressValue: "10 Levels Active",
+      progressPercent: 100,
       actionLabel: "View Team Structure",
       badgeIcon: "fa-users",
-      badgeText: "156 Members",
+      badgeText: "Referrals",
     },
     {
-      title: "Withdrawal Commission",
-      description: "Commission from withdrawals",
-      amount: "$2,345.60",
-      change: "+8.9%",
-      icon: "fa-hand-holding-usd",
+      title: "Capital Return",
+      description: "200% capital return on investments",
+      amount: `$${capitalReturned.toFixed(2)}`,
+      change: "200% Target",
+      icon: "fa-undo",
       color: "green-400",
       stats: [
-        { label: "Withdrawals", value: "47" },
-        { label: "Commission Rate", value: "2.5%" },
-        { label: "Volume", value: "$93.8K" },
+        { label: "Returned", value: `$${capitalReturned.toFixed(2)}` },
+        { label: "Target", value: "200%" },
+        { label: "Status", value: "Active" },
       ],
-      progressLabel: "Monthly Target",
-      progressValue: "78% Achieved",
+      progressLabel: "Return Progress",
+      progressValue: "Returning Capital",
       progressPercent: 78,
       actionLabel: "View Withdrawal History",
       badgeIcon: "fa-chart-bar",

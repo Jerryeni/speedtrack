@@ -16,45 +16,19 @@ interface ActivationModalProps {
 
 export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired = false }: ActivationModalProps) {
   const { account, refreshBalances } = useWeb3();
-  const [formData, setFormData] = useState({
-    name: "",
-    mobile: "",
-    email: "",
-    referrer: ""
-  });
   const [isActivating, setIsActivating] = useState(false);
-
-  // Load pending referral code on mount
-  useEffect(() => {
-    if (isOpen && typeof window !== 'undefined') {
-      // First try to get the stored referrer address directly
-      const pendingReferrerAddress = localStorage.getItem('pendingReferrerAddress');
-      const pendingCode = localStorage.getItem('pendingReferralCode');
-      
-      if (pendingReferrerAddress) {
-        console.log('Found pending referrer address:', pendingReferrerAddress);
-        setFormData(prev => ({ ...prev, referrer: pendingReferrerAddress }));
-        showToast(`Referral code ${pendingCode || 'applied'} - Referrer auto-filled!`, 'success');
-      } else if (pendingCode) {
-        console.log('Found pending code, trying to get wallet address:', pendingCode);
-        // Fallback: Try to get wallet address from code using the mapping
-        import('@/lib/web3/referralCode').then(({ getWalletFromCode }) => {
-          const walletAddress = getWalletFromCode(pendingCode);
-          
-          if (walletAddress) {
-            console.log('Retrieved wallet address from code:', walletAddress);
-            setFormData(prev => ({ ...prev, referrer: walletAddress }));
-            showToast(`Referral code ${pendingCode} applied!`, 'success');
-          } else {
-            console.log('No wallet address found for code:', pendingCode);
-            showToast(`Referral code ${pendingCode} found, but please enter referrer address manually`, 'info');
-          }
-        });
-      }
-    }
-  }, [isOpen]);
+  const [selectedLevel, setSelectedLevel] = useState(0);
+  const [activationFee, setActivationFee] = useState("10");
 
   if (!isOpen) return null;
+
+  const activationLevels = [
+    { level: 0, fee: "10", maxInvestment: "50" },
+    { level: 1, fee: "50", maxInvestment: "250" },
+    { level: 2, fee: "100", maxInvestment: "500" },
+    { level: 3, fee: "250", maxInvestment: "1250" },
+    { level: 4, fee: "500", maxInvestment: "2500" },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,59 +38,43 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
       return;
     }
 
-    // Validate all fields
-    if (!formData.name || formData.name.trim().length < 2) {
-      showToast("Please enter a valid name (minimum 2 characters)", 'error');
-      return;
-    }
-
-    if (!formData.mobile || formData.mobile.trim().length < 10) {
-      showToast("Please enter a valid mobile number", 'error');
-      return;
-    }
-
-    if (!formData.email || !formData.email.includes('@')) {
-      showToast("Please enter a valid email address", 'error');
-      return;
-    }
-
-    if (!formData.referrer || formData.referrer.trim().length < 10) {
-      showToast("Please enter a valid referrer address", 'error');
-      return;
-    }
-
     try {
       setIsActivating(true);
       showToast("Processing activation...", 'info');
       
-      const tx = await activateAccount(formData, account);
+      const tx = await activateAccount(selectedLevel, account);
       showToast("Transaction submitted! Waiting for confirmation...", 'info');
       
       await tx.wait();
       
       showToast("Account activated successfully! 🎉", 'success');
       
-      // Clear pending referral code and address after successful activation
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('pendingReferralCode');
-        localStorage.removeItem('pendingReferrerAddress');
-      }
-      
       await refreshBalances();
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Activation error:', error);
+      console.error('=== ACTIVATION ERROR ===');
+      console.error('Full error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error reason:', error.reason);
+      console.error('Error data:', error.data);
+      
       const errorMessage = parseActivationError(error);
       showToast(errorMessage, 'error');
+      
+      // Also show the raw error in console for debugging
+      if (error.reason) {
+        console.error('Contract revert reason:', error.reason);
+      }
     } finally {
       setIsActivating(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-0 sm:p-4">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 w-full h-full sm:h-auto sm:rounded-2xl p-4 md:p-6 lg:p-8 sm:max-w-lg border-0 sm:border sm:border-gray-700 relative sm:my-8 max-h-screen sm:max-h-[95vh] overflow-y-auto shadow-2xl safe-area-inset keyboard-aware">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 w-full sm:h-auto rounded-2xl p-6 sm:max-w-lg border border-gray-700 relative my-8 max-h-[95vh] overflow-y-auto shadow-2xl">
         {!isRequired && (
           <button
             onClick={onClose}
@@ -148,85 +106,67 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
             <p className="text-sm text-yellow-400">
               <i className="fas fa-info-circle mr-2"></i>
-              Activation fee: 10 USDT
+              Choose your activation level based on investment capacity
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Full Name
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Select Activation Level
             </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
-              placeholder="Enter your full name"
-              disabled={isActivating}
-              autoComplete="name"
-            />
+            <div className="space-y-3">
+              {activationLevels.map((level) => (
+                <div
+                  key={level.level}
+                  onClick={() => {
+                    setSelectedLevel(level.level);
+                    setActivationFee(level.fee);
+                  }}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedLevel === level.level
+                      ? 'border-neon-blue bg-neon-blue/10'
+                      : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-white">Level {level.level}</p>
+                      <p className="text-sm text-gray-400">
+                        Max Investment: {level.maxInvestment} USDT
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-neon-blue">{level.fee} USDT</p>
+                      <p className="text-xs text-gray-400">Activation Fee</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Mobile Number
-            </label>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={formData.mobile}
-              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
-              placeholder="+1 234 567 8900"
-              disabled={isActivating}
-              autoComplete="tel"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              inputMode="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full min-h-[48px] bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all"
-              placeholder="your@email.com"
-              disabled={isActivating}
-              autoComplete="email"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center justify-between">
-              <span>Referrer Address</span>
-              {formData.referrer && (
-                <span className="text-xs text-green-400">
-                  <i className="fas fa-check-circle mr-1"></i>
-                  Auto-filled
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={formData.referrer}
-              onChange={(e) => setFormData({ ...formData, referrer: e.target.value })}
-              className={`w-full min-h-[48px] bg-gray-800 border ${
-                formData.referrer ? 'border-green-500/50' : 'border-gray-700'
-              } rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-neon-blue focus:ring-2 focus:ring-neon-blue/20 transition-all`}
-              placeholder="0x... (will be auto-filled if you used a referral link)"
-              disabled={isActivating}
-            />
-            {formData.referrer && (
-              <p className="text-xs text-green-400 mt-1">
-                <i className="fas fa-info-circle mr-1"></i>
-                Referrer address loaded from your referral link
-              </p>
-            )}
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <h4 className="font-semibold mb-2 text-blue-400">Activation Benefits:</h4>
+            <ul className="text-sm text-gray-300 space-y-1">
+              <li className="flex items-center">
+                <i className="fas fa-check-circle text-green-400 mr-2"></i>
+                Daily ROI: 0.5%
+              </li>
+              <li className="flex items-center">
+                <i className="fas fa-check-circle text-green-400 mr-2"></i>
+                10-Level Referral Commissions
+              </li>
+              <li className="flex items-center">
+                <i className="fas fa-check-circle text-green-400 mr-2"></i>
+                Capital Return: 200%
+              </li>
+              <li className="flex items-center">
+                <i className="fas fa-check-circle text-green-400 mr-2"></i>
+                ST Token Rewards: 10%
+              </li>
+            </ul>
           </div>
 
           <div className={`flex flex-col sm:flex-row ${!isRequired ? 'gap-3' : ''} pt-4`}>
@@ -235,7 +175,7 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
                 type="button"
                 onClick={onClose}
                 disabled={isActivating}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 min-h-[48px]"
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 text-sm whitespace-nowrap"
               >
                 Cancel
               </Button>
@@ -243,17 +183,17 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
             <Button
               type="submit"
               disabled={isActivating}
-              className={`${!isRequired ? 'flex-1' : 'w-full'} min-h-[48px]`}
+              className={`${!isRequired ? 'flex-1' : 'w-full'} py-2.5 text-sm whitespace-nowrap`}
             >
               {isActivating ? (
                 <>
-                  <i className="fas fa-spinner fa-spin mr-2"></i>
-                  Activating...
+                  <i className="fas fa-spinner fa-spin mr-1.5"></i>
+                  <span>Activating...</span>
                 </>
               ) : (
                 <>
-                  <i className="fas fa-rocket mr-2"></i>
-                  Activate Now
+                  <i className="fas fa-rocket mr-1.5"></i>
+                  <span>Activate ({activationFee} USDT)</span>
                 </>
               )}
             </Button>

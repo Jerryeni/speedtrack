@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
-import { calculateReward } from "@/lib/web3/rewards";
+import { getClaimableROI, claimROI } from "@/lib/web3/rewards";
 import Button from "@/components/ui/Button";
-import { claimRewards } from "@/lib/web3/rewards";
 import { showToast } from "@/lib/toast";
 
 export default function DailyRewardTimer() {
@@ -41,7 +40,7 @@ export default function DailyRewardTimer() {
       if (!account || !isConnected || !isCorrectChain) return;
       
       try {
-        const reward = await calculateReward(account);
+        const reward = await getClaimableROI(account);
         setDailyReward(reward);
       } catch (error) {
         console.error("Failed to fetch reward:", error);
@@ -58,14 +57,14 @@ export default function DailyRewardTimer() {
 
     try {
       setIsClaiming(true);
-      showToast("Processing claim transaction...");
-      const tx = await claimRewards();
+      showToast("Processing claim transaction...", "info");
+      const tx = await claimROI();
       await tx.wait();
-      showToast("Rewards claimed successfully!");
+      showToast("ROI claimed successfully!", "success");
       await refreshBalances();
       setDailyReward("0");
     } catch (error: any) {
-      showToast(error.message || "Failed to claim rewards");
+      showToast(error.message || "Failed to claim ROI", "error");
     } finally {
       setIsClaiming(false);
     }

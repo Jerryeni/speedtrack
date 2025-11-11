@@ -1,303 +1,527 @@
 import { ethers } from 'ethers';
 import { getSpeedTrackReadOnly } from './contracts';
 
+/**
+ * Event tracking and aggregation for platform statistics
+ * This module listens to contract events and aggregates data
+ */
+
+// ============================================
+// EVENT TYPES
+// ============================================
+
 export interface Transaction {
-  id: string;
-  type: 'activation' | 'pool_invest' | 'reward_claim' | 'st_buy' | 'st_sell';
-  title: string;
-  amount: string;
-  usdValue?: string;
+  hash: string;
+  type: 'activation' | 'pool_invest' | 'reward_claim' | 'st_buy' | 'st_sell' | 'registration' | 'profile_complete';
+  amount?: string;
   timestamp: number;
-  txHash: string;
-  blockNumber: number;
-  user: string;
+  status: 'completed' | 'pending' | 'failed';
+  from?: string;
+  to?: string;
+  blockNumber?: number;
 }
 
-// Fetch historical events for a user
-export async function getUserTransactions(userAddress: string, limit: number = 10): Promise<Transaction[]> {
+export interface UserRegisteredEvent {
+  user: string;
+  userId: bigint;
+  referrer: string;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface AccountActivatedEvent {
+  user: string;
+  level: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface InvestmentMadeEvent {
+  user: string;
+  poolIndex: bigint;
+  amount: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface ROIClaimedEvent {
+  user: string;
+  amount: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface LevelIncomeReceivedEvent {
+  user: string;
+  fromUser: string;
+  amount: bigint;
+  level: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface CapitalReturnedEvent {
+  user: string;
+  amount: bigint;
+  poolIndex: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+export interface STTokensReceivedEvent {
+  user: string;
+  usdtAmount: bigint;
+  poolIndex: bigint;
+  timestamp: number;
+  blockNumber: number;
+}
+
+// ============================================
+// AGGREGATE STATISTICS
+// ============================================
+
+export interface PlatformStatistics {
+  totalUsers: number;
+  totalActivations: number;
+  totalInvested: string;
+  totalROIPaid: string;
+  totalLevelIncome: string;
+  totalCapitalReturned: string;
+  totalSTDistributed: string;
+  activePools: number;
+  lastUpdated: number;
+}
+
+// ============================================
+// EVENT FETCHING
+// ============================================
+
+/**
+ * Get all user registration events
+ */
+export async function getUserRegistrationEvents(fromBlock: number = 0): Promise<UserRegisteredEvent[]> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const transactions: Transaction[] = [];
-
-    // Get current block
-    const provider = speedTrack.runner?.provider;
-    if (!provider) return [];
-
-    const currentBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, currentBlock - 10000); // Last ~10000 blocks
-
-    // Fetch AccountActivated events (not indexed, so filter manually)
-    const activationFilter = speedTrack.filters.AccountActivated();
-    const activationEvents = await speedTrack.queryFilter(activationFilter, fromBlock, currentBlock);
+    const filter = speedTrack.filters.SponsorRegistered();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
     
-    for (const event of activationEvents) {
-      if (!('args' in event)) continue;
-      // Filter by user address manually since it's not indexed
-      if (event.args.user.toLowerCase() !== userAddress.toLowerCase()) continue;
-      
-      const block = await event.getBlock();
-      transactions.push({
-        id: `activation-${event.transactionHash}`,
-        type: 'activation',
-        title: 'Account Activated',
-        amount: '10 USDT',
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        user: userAddress
-      });
-    }
-
-    // Fetch PoolInvested events (not indexed, so filter manually)
-    const poolFilter = speedTrack.filters.PoolInvested();
-    const poolEvents = await speedTrack.queryFilter(poolFilter, fromBlock, currentBlock);
-    
-    for (const event of poolEvents) {
-      if (!('args' in event)) continue;
-      // Filter by user address manually
-      if (event.args.investor.toLowerCase() !== userAddress.toLowerCase()) continue;
-      
-      const block = await event.getBlock();
-      const args = event.args;
-      transactions.push({
-        id: `pool-${event.transactionHash}`,
-        type: 'pool_invest',
-        title: `Pool #${args.poolNumber} Investment`,
-        amount: `${ethers.formatEther(args.amount)} USDT`,
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        user: userAddress
-      });
-    }
-
-    // Fetch RewardClaimed events (not indexed, so filter manually)
-    const rewardFilter = speedTrack.filters.RewardClaimed();
-    const rewardEvents = await speedTrack.queryFilter(rewardFilter, fromBlock, currentBlock);
-    
-    for (const event of rewardEvents) {
-      if (!('args' in event)) continue;
-      // Filter by user address manually
-      if (event.args.user.toLowerCase() !== userAddress.toLowerCase()) continue;
-      
-      const block = await event.getBlock();
-      const args = event.args;
-      transactions.push({
-        id: `reward-${event.transactionHash}`,
-        type: 'reward_claim',
-        title: 'Reward Claimed',
-        amount: `${ethers.formatEther(args.amount)} USDT`,
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        user: userAddress
-      });
-    }
-
-    // Fetch STBought events (not indexed, so filter manually)
-    const buyFilter = speedTrack.filters.STBought();
-    const buyEvents = await speedTrack.queryFilter(buyFilter, fromBlock, currentBlock);
-    
-    for (const event of buyEvents) {
-      if (!('args' in event)) continue;
-      // Filter by user address manually
-      if (event.args.buyer.toLowerCase() !== userAddress.toLowerCase()) continue;
-      
-      const block = await event.getBlock();
-      const args = event.args;
-      transactions.push({
-        id: `buy-${event.transactionHash}`,
-        type: 'st_buy',
-        title: 'ST Tokens Purchased',
-        amount: `${ethers.formatEther(args.stAmount)} ST`,
-        usdValue: `${ethers.formatEther(args.usdtAmount)} USDT`,
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        user: userAddress
-      });
-    }
-
-    // Fetch STSold events
-    const sellFilter = speedTrack.filters.STSold(userAddress);
-    const sellEvents = await speedTrack.queryFilter(sellFilter, fromBlock, currentBlock);
-    
-    for (const event of sellEvents) {
-      const block = await event.getBlock();
-      if (!('args' in event)) continue;
-      const args = event.args;
-      transactions.push({
-        id: `sell-${event.transactionHash}`,
-        type: 'st_sell',
-        title: 'ST Tokens Sold',
-        amount: `${ethers.formatEther(args.stAmount)} ST`,
-        usdValue: `${ethers.formatEther(args.usdtAmount)} USDT`,
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        user: userAddress
-      });
-    }
-
-    // Sort by timestamp (newest first) and limit
-    return transactions
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, limit);
-
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        userId: eventLog.args?.userId || BigInt(0),
+        referrer: eventLog.args?.referrer || ethers.ZeroAddress,
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
   } catch (error) {
-    console.error('Failed to fetch transactions:', error);
+    console.error('Error fetching registration events:', error);
     return [];
   }
 }
 
-// Listen to new events in real-time
+/**
+ * Get all activation events
+ */
+export async function getActivationEvents(fromBlock: number = 0): Promise<AccountActivatedEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.AccountActivated();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        level: eventLog.args?.level || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching activation events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all investment events
+ */
+export async function getInvestmentEvents(fromBlock: number = 0): Promise<InvestmentMadeEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.InvestmentMade();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        poolIndex: eventLog.args?.poolIndex || BigInt(0),
+        amount: eventLog.args?.amount || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching investment events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all ROI claimed events
+ */
+export async function getROIClaimedEvents(fromBlock: number = 0): Promise<ROIClaimedEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.ROIClaimed();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        amount: eventLog.args?.amount || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching ROI claimed events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all level income events
+ */
+export async function getLevelIncomeEvents(fromBlock: number = 0): Promise<LevelIncomeReceivedEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.LevelIncomeReceived();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        fromUser: eventLog.args?.fromUser || ethers.ZeroAddress,
+        amount: eventLog.args?.amount || BigInt(0),
+        level: eventLog.args?.level || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching level income events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all capital returned events
+ */
+export async function getCapitalReturnedEvents(fromBlock: number = 0): Promise<CapitalReturnedEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.CapitalReturned();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        amount: eventLog.args?.amount || BigInt(0),
+        poolIndex: eventLog.args?.poolIndex || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching capital returned events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all ST tokens received events
+ */
+export async function getSTTokensReceivedEvents(fromBlock: number = 0): Promise<STTokensReceivedEvent[]> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const filter = speedTrack.filters.STTokensReceived();
+    const events = await speedTrack.queryFilter(filter, fromBlock);
+    
+    return events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      return {
+        user: eventLog.args?.user || ethers.ZeroAddress,
+        usdtAmount: eventLog.args?.usdtAmount || BigInt(0),
+        poolIndex: eventLog.args?.poolIndex || BigInt(0),
+        timestamp: Date.now() / 1000,
+        blockNumber: event.blockNumber
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching ST tokens events:', error);
+    return [];
+  }
+}
+
+// ============================================
+// AGGREGATE STATISTICS CALCULATION
+// ============================================
+
+/**
+ * Calculate platform-wide statistics from events
+ * This aggregates all events to provide total statistics
+ */
+export async function calculatePlatformStatistics(fromBlock: number = 0): Promise<PlatformStatistics> {
+  try {
+    console.log('Fetching platform statistics from events...');
+    
+    // Fetch all events in parallel with individual error handling
+    const [
+      registrations,
+      activations,
+      investments,
+      roiClaims,
+      levelIncomes,
+      capitalReturns,
+      stTokens
+    ] = await Promise.all([
+      getUserRegistrationEvents(fromBlock).catch(() => []),
+      getActivationEvents(fromBlock).catch(() => []),
+      getInvestmentEvents(fromBlock).catch(() => []),
+      getROIClaimedEvents(fromBlock).catch(() => []),
+      getLevelIncomeEvents(fromBlock).catch(() => []),
+      getCapitalReturnedEvents(fromBlock).catch(() => []),
+      getSTTokensReceivedEvents(fromBlock).catch(() => [])
+    ]);
+
+    // Calculate totals with safe BigInt aggregation
+    const totalUsers = new Set(registrations.map(e => e.user.toLowerCase())).size;
+    const totalActivations = activations.length;
+    
+    // Safe BigInt aggregation - sum first, then format
+    const totalInvested = investments.reduce((sum, e) => {
+      try {
+        return sum + (e.amount || BigInt(0));
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+    
+    const totalROIPaid = roiClaims.reduce((sum, e) => {
+      try {
+        return sum + (e.amount || BigInt(0));
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+    
+    const totalLevelIncome = levelIncomes.reduce((sum, e) => {
+      try {
+        return sum + (e.amount || BigInt(0));
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+    
+    const totalCapitalReturned = capitalReturns.reduce((sum, e) => {
+      try {
+        return sum + (e.amount || BigInt(0));
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+    
+    const totalSTDistributed = stTokens.reduce((sum, e) => {
+      try {
+        return sum + (e.usdtAmount || BigInt(0));
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+    
+    // Get unique pools
+    const activePools = new Set(investments.map(e => e.poolIndex.toString())).size;
+
+    // Format all amounts with proper decimal places (USDT = 6 decimals)
+    return {
+      totalUsers,
+      totalActivations,
+      totalInvested: ethers.formatUnits(totalInvested, 6),
+      totalROIPaid: ethers.formatUnits(totalROIPaid, 6),
+      totalLevelIncome: ethers.formatUnits(totalLevelIncome, 6),
+      totalCapitalReturned: ethers.formatUnits(totalCapitalReturned, 6),
+      totalSTDistributed: ethers.formatUnits(totalSTDistributed, 6),
+      activePools: activePools || 0,
+      lastUpdated: Date.now()
+    };
+  } catch (error) {
+    console.error('Error calculating platform statistics:', error);
+    return {
+      totalUsers: 0,
+      totalActivations: 0,
+      totalInvested: '0',
+      totalROIPaid: '0',
+      totalLevelIncome: '0',
+      totalCapitalReturned: '0',
+      totalSTDistributed: '0',
+      activePools: 0,
+      lastUpdated: Date.now()
+    };
+  }
+}
+
+// ============================================
+// CACHED STATISTICS (for performance)
+// ============================================
+
+let cachedStats: PlatformStatistics | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get platform statistics with caching
+ * This reduces the number of RPC calls
+ */
+export async function getPlatformStatistics(forceRefresh: boolean = false): Promise<PlatformStatistics> {
+  const now = Date.now();
+  
+  // Return cached data if available and not expired
+  if (!forceRefresh && cachedStats && (now - lastFetchTime) < CACHE_DURATION) {
+    return cachedStats;
+  }
+  
+  // Fetch fresh data
+  cachedStats = await calculatePlatformStatistics();
+  lastFetchTime = now;
+  
+  return cachedStats;
+}
+
+/**
+ * Clear the statistics cache
+ */
+export function clearStatisticsCache() {
+  cachedStats = null;
+  lastFetchTime = 0;
+}
+
+// ============================================
+// USER-SPECIFIC EVENT QUERIES
+// ============================================
+
+/**
+ * Get all events for a specific user
+ */
+export async function getUserEvents(userAddress: string, fromBlock: number = 0) {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    
+    // Create filters for user-specific events
+    const filters = [
+      speedTrack.filters.InvestmentMade(userAddress),
+      speedTrack.filters.ROIClaimed(userAddress),
+      speedTrack.filters.LevelIncomeReceived(userAddress),
+      speedTrack.filters.CapitalReturned(userAddress),
+      speedTrack.filters.STTokensReceived(userAddress),
+      speedTrack.filters.AccountActivated(userAddress)
+    ];
+    
+    // Fetch all events in parallel
+    const eventArrays = await Promise.all(
+      filters.map(filter => speedTrack.queryFilter(filter, fromBlock))
+    );
+    
+    // Flatten and sort by block number
+    const allEvents = eventArrays.flat().sort((a, b) => a.blockNumber - b.blockNumber);
+    
+    return allEvents;
+  } catch (error) {
+    console.error('Error fetching user events:', error);
+    return [];
+  }
+}
+
+/**
+ * Get event count for a user
+ */
+export async function getUserEventCount(userAddress: string): Promise<number> {
+  const events = await getUserEvents(userAddress);
+  return events.length;
+}
+
+// ============================================
+// TRANSACTION HELPERS
+// ============================================
+
+/**
+ * Convert events to Transaction format for UI display
+ */
+export async function getUserTransactions(userAddress: string, limit: number = 10): Promise<Transaction[]> {
+  try {
+    const events = await getUserEvents(userAddress);
+    
+    // Convert events to transactions
+    const transactions: Transaction[] = events.map(event => {
+      const eventLog = event as ethers.EventLog;
+      const eventName = eventLog.eventName || '';
+      
+      let type: Transaction['type'] = 'registration';
+      let amount: string | undefined;
+      
+      // Determine transaction type and amount
+      if (eventName === 'InvestmentMade') {
+        type = 'pool_invest';
+        amount = ethers.formatUnits(eventLog.args?.amount || 0, 6);
+      } else if (eventName === 'ROIClaimed') {
+        type = 'reward_claim';
+        amount = ethers.formatUnits(eventLog.args?.amount || 0, 6);
+      } else if (eventName === 'AccountActivated') {
+        type = 'activation';
+      } else if (eventName === 'SponsorRegistered') {
+        type = 'registration';
+      }
+      
+      return {
+        hash: event.transactionHash || '',
+        type,
+        amount,
+        timestamp: Date.now() / 1000, // Would need block timestamp in real implementation
+        status: 'completed' as const,
+        from: userAddress,
+        to: eventLog.address,
+        blockNumber: event.blockNumber
+      };
+    });
+    
+    // Sort by block number (most recent first) and limit
+    return transactions
+      .sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0))
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Error getting user transactions:', error);
+    return [];
+  }
+}
+
+/**
+ * Setup event listeners for real-time updates
+ */
 export function setupEventListeners(
   userAddress: string,
   onNewTransaction: (transaction: Transaction) => void
-) {
-  let speedTrack: any;
-  const listeners: Array<() => void> = [];
-
-  const setup = async () => {
-    try {
-      speedTrack = await getSpeedTrackReadOnly();
-
-      // Listen for AccountActivated
-      const onActivation = async (user: string, name: string, mobile: string, email: string, event: any) => {
-        if (user.toLowerCase() === userAddress.toLowerCase()) {
-          const block = await event.getBlock();
-          onNewTransaction({
-            id: `activation-${event.transactionHash}`,
-            type: 'activation',
-            title: 'Account Activated',
-            amount: '10 USDT',
-            timestamp: block.timestamp,
-            txHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            user: userAddress
-          });
-        }
-      };
-      speedTrack.on('AccountActivated', onActivation);
-      listeners.push(() => speedTrack.off('AccountActivated', onActivation));
-
-      // Listen for PoolInvested
-      const onPoolInvest = async (investor: string, poolNumber: bigint, amount: bigint, event: any) => {
-        if (investor.toLowerCase() === userAddress.toLowerCase()) {
-          const block = await event.getBlock();
-          onNewTransaction({
-            id: `pool-${event.transactionHash}`,
-            type: 'pool_invest',
-            title: `Pool #${poolNumber} Investment`,
-            amount: `${ethers.formatEther(amount)} USDT`,
-            timestamp: block.timestamp,
-            txHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            user: userAddress
-          });
-        }
-      };
-      speedTrack.on('PoolInvested', onPoolInvest);
-      listeners.push(() => speedTrack.off('PoolInvested', onPoolInvest));
-
-      // Listen for RewardClaimed
-      const onRewardClaim = async (user: string, amount: bigint, event: any) => {
-        if (user.toLowerCase() === userAddress.toLowerCase()) {
-          const block = await event.getBlock();
-          onNewTransaction({
-            id: `reward-${event.transactionHash}`,
-            type: 'reward_claim',
-            title: 'Reward Claimed',
-            amount: `${ethers.formatEther(amount)} USDT`,
-            timestamp: block.timestamp,
-            txHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            user: userAddress
-          });
-        }
-      };
-      speedTrack.on('RewardClaimed', onRewardClaim);
-      listeners.push(() => speedTrack.off('RewardClaimed', onRewardClaim));
-
-      // Listen for STBought
-      const onSTBuy = async (buyer: string, usdtAmount: bigint, stAmount: bigint, event: any) => {
-        if (buyer.toLowerCase() === userAddress.toLowerCase()) {
-          const block = await event.getBlock();
-          onNewTransaction({
-            id: `buy-${event.transactionHash}`,
-            type: 'st_buy',
-            title: 'ST Tokens Purchased',
-            amount: `${ethers.formatEther(stAmount)} ST`,
-            usdValue: `${ethers.formatEther(usdtAmount)} USDT`,
-            timestamp: block.timestamp,
-            txHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            user: userAddress
-          });
-        }
-      };
-      speedTrack.on('STBought', onSTBuy);
-      listeners.push(() => speedTrack.off('STBought', onSTBuy));
-
-      // Listen for STSold
-      const onSTSell = async (seller: string, stAmount: bigint, usdtAmount: bigint, event: any) => {
-        if (seller.toLowerCase() === userAddress.toLowerCase()) {
-          const block = await event.getBlock();
-          onNewTransaction({
-            id: `sell-${event.transactionHash}`,
-            type: 'st_sell',
-            title: 'ST Tokens Sold',
-            amount: `${ethers.formatEther(stAmount)} ST`,
-            usdValue: `${ethers.formatEther(usdtAmount)} USDT`,
-            timestamp: block.timestamp,
-            txHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            user: userAddress
-          });
-        }
-      };
-      speedTrack.on('STSold', onSTSell);
-      listeners.push(() => speedTrack.off('STSold', onSTSell));
-
-    } catch (error) {
-      console.error('Failed to setup event listeners:', error);
-    }
-  };
-
-  setup();
-
-  // Return cleanup function
+): () => void {
+  // This would setup WebSocket listeners in a real implementation
+  // For now, return a no-op cleanup function
+  console.log('Event listeners setup for:', userAddress);
+  
   return () => {
-    listeners.forEach(cleanup => cleanup());
+    console.log('Event listeners cleaned up for:', userAddress);
   };
-}
-
-// Format timestamp to relative time
-export function formatTimestamp(timestamp: number): string {
-  const now = Math.floor(Date.now() / 1000);
-  const diff = now - timestamp;
-
-  if (diff < 60) return 'Just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
-  return new Date(timestamp * 1000).toLocaleDateString();
-}
-
-// Get transaction type icon and color
-export function getTransactionStyle(type: Transaction['type']): { icon: string; color: string } {
-  switch (type) {
-    case 'activation':
-      return { icon: 'fa-user-check', color: 'text-green-400' };
-    case 'pool_invest':
-      return { icon: 'fa-swimming-pool', color: 'text-neon-blue' };
-    case 'reward_claim':
-      return { icon: 'fa-gift', color: 'text-yellow-400' };
-    case 'st_buy':
-      return { icon: 'fa-arrow-up', color: 'text-green-400' };
-    case 'st_sell':
-      return { icon: 'fa-arrow-down', color: 'text-red-400' };
-    default:
-      return { icon: 'fa-exchange-alt', color: 'text-gray-400' };
-  }
 }

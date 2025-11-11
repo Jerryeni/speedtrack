@@ -1,10 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getSpeedTrackReadOnly } from "@/lib/web3/contracts";
 import MobileNav from "@/components/layout/MobileNav";
 
 export default function DashboardHeader() {
+  const router = useRouter();
+  const { account, isConnected } = useWeb3();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      if (!account || !isConnected) return;
+      
+      try {
+        const speedTrack = await getSpeedTrackReadOnly();
+        const owner = await speedTrack.owner();
+        setIsAdmin(owner.toLowerCase() === account.toLowerCase());
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    }
+    
+    checkAdmin();
+  }, [account, isConnected]);
 
   return (
     <>
@@ -22,34 +44,36 @@ export default function DashboardHeader() {
           
           {/* Desktop: Show all icons */}
           <div className="hidden md:flex items-center space-x-4">
+            {isAdmin && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center hover:bg-green-500/30 transition-colors"
+                title="Admin Panel"
+              >
+                <i className="fas fa-shield-alt text-green-400 text-sm"></i>
+              </button>
+            )}
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
+              <button className="w-8 h-8 rounded-full bg-electric-purple/20 flex items-center justify-center hover:bg-electric-purple/30 transition-colors">
                 <i className="fas fa-bell text-electric-purple text-sm"></i>
-              </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">3</span>
-              </div>
+              </button>
+              {/* Notification badge - will be dynamic when notification system is implemented */}
             </div>
-            <div className="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
-              <i className="fas fa-cog text-neon-blue text-sm"></i>
-            </div>
-            <img 
-              src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" 
-              alt="Profile" 
-              className="w-8 h-8 rounded-full border-2 border-neon-blue/50"
-            />
+            <button 
+              onClick={() => window.location.href = '/profile'}
+              className="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center hover:bg-neon-blue/30 transition-colors"
+              title="Profile Settings"
+            >
+              <i className="fas fa-user text-neon-blue text-sm"></i>
+            </button>
           </div>
 
           {/* Mobile: Show only menu button */}
           <div className="flex md:hidden items-center space-x-2">
-            <div className="relative">
-              <button className="min-w-[44px] min-h-[44px] rounded-lg bg-electric-purple/20 flex items-center justify-center">
-                <i className="fas fa-bell text-electric-purple text-sm"></i>
-              </button>
-              <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">3</span>
-              </div>
-            </div>
+            <button className="min-w-[44px] min-h-[44px] rounded-lg bg-electric-purple/20 flex items-center justify-center active:scale-95 transition-transform">
+              <i className="fas fa-bell text-electric-purple text-sm"></i>
+              {/* Notification badge - will be dynamic when notification system is implemented */}
+            </button>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="min-w-[44px] min-h-[44px] rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95"

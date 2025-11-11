@@ -24,7 +24,7 @@ export default function WalletInfo({ onShowQR }: WalletInfoProps) {
   };
 
   const totalBalance = isConnected 
-    ? (parseFloat(balances.usdt) + parseFloat(balances.st)).toFixed(2)
+    ? (parseFloat(balances.usdt || '0') + parseFloat(balances.st || '0')).toFixed(2)
     : "0.00";
 
   return (
@@ -75,7 +75,7 @@ export default function WalletInfo({ onShowQR }: WalletInfoProps) {
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 bg-gray-800/50 rounded-xl">
               <p className="text-xs text-gray-400 mb-1">USDT</p>
-              <p className="font-bold text-green-400">{parseFloat(balances.usdt).toFixed(2)}</p>
+              <p className="font-bold text-green-400">{parseFloat(balances.usdt || '0').toFixed(2)}</p>
             </div>
             <div className="text-center p-3 bg-gray-800/50 rounded-xl">
               <p className="text-xs text-gray-400 mb-1">ST Tokens</p>

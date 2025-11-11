@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useWeb3 } from "@/lib/web3/Web3Context";
-import { getCurrentPool, getPoolInfo } from "@/lib/web3/pools";
+import { getPoolInfo } from "@/lib/web3/pools";
+import { usePlatformStats } from "@/lib/web3/hooks/usePlatformStats";
 
 export default function PoolProgress() {
   const { isConnected, isCorrectChain } = useWeb3();
+  const { stats } = usePlatformStats();
   const [poolData, setPoolData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,14 +19,24 @@ export default function PoolProgress() {
       }
 
       try {
-        const currentPoolNum = await getCurrentPool();
+        // Use the most recent active pool (activePools gives us the count)
+        const currentPoolNum = stats?.activePools || 1;
         const poolInfo = await getPoolInfo(currentPoolNum);
-        setPoolData(poolInfo);
+        
+        // Transform to expected format
+        setPoolData({
+          poolNumber: poolInfo.poolIndex,
+          capacity: poolInfo.size,
+          currentAmount: poolInfo.currentFilled,
+          filled: poolInfo.progress >= 100,
+          progress: poolInfo.progress,
+          investorCount: poolInfo.queueLength
+        });
       } catch (error: any) {
         console.error("Failed to fetch pool data:", error?.message || error);
         // Set default pool data on error
         setPoolData({
-          poolNumber: 1,
+          poolNumber: stats?.activePools || 1,
           capacity: '0',
           currentAmount: '0',
           filled: false,
@@ -39,7 +51,7 @@ export default function PoolProgress() {
     fetchPoolData();
     const interval = setInterval(fetchPoolData, 30000);
     return () => clearInterval(interval);
-  }, [isConnected, isCorrectChain]);
+  }, [isConnected, isCorrectChain, stats]);
 
   if (loading || !poolData) {
     return (
@@ -51,10 +63,11 @@ export default function PoolProgress() {
     );
   }
 
-  const cycleNumber = poolData.poolNumber;
-  const completion = poolData.progress;
-  const participants = poolData.investorCount;
-  const totalPool = `${parseFloat(poolData.currentAmount).toFixed(2)} USDT`;
+  const cycleNumber = poolData.poolNumber || 1;
+  const completion = Math.round(poolData.progress || 0);
+  const participants = poolData.investorCount || 0;
+  const currentAmount = parseFloat(poolData.currentAmount || '0');
+  const totalPool = `${currentAmount.toFixed(2)} USDT`;
   const timeLeft = poolData.filled ? "Completed" : "Active";
   return (
     <section className="px-4 mb-8">

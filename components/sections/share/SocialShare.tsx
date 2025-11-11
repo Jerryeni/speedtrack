@@ -1,11 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getReferralStats } from "@/lib/web3/referrals";
+
 interface SocialShareProps {
   onShare: (platform: string) => void;
 }
 
 export default function SocialShare({ onShare }: SocialShareProps) {
-  const referralLink = "https://racepool.io/ref/RX7K9M2P";
+  const { account } = useWeb3();
+  const [referralLink, setReferralLink] = useState("");
+
+  useEffect(() => {
+    async function fetchReferralLink() {
+      if (!account) return;
+      
+      try {
+        const stats = await getReferralStats(account);
+        setReferralLink(stats.referralLink || window.location.origin);
+      } catch (error) {
+        console.error('Error fetching referral link:', error);
+        setReferralLink(window.location.origin);
+      }
+    }
+
+    fetchReferralLink();
+  }, [account]);
 
   const shareOnTelegram = () => {
     const text = encodeURIComponent(

@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useWeb3 } from "@/lib/web3/Web3Context";
+import { getUserDetails } from "@/lib/web3/activation";
 import ProfileHeader from "@/components/sections/profile/ProfileHeader";
 import PersonalInfo from "@/components/sections/profile/PersonalInfo";
 import WalletInfo from "@/components/sections/profile/WalletInfo";
@@ -8,11 +11,34 @@ import AccountPreferences from "@/components/sections/profile/AccountPreferences
 import AccountActions from "@/components/sections/profile/AccountActions";
 import QRModal from "@/components/modals/QRModal";
 import PasswordModal from "@/components/modals/PasswordModal";
+import ProfileCompleteModal from "@/components/modals/ProfileCompleteModal";
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const { account, isConnected } = useWeb3();
   const [isEditMode, setIsEditMode] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showProfileCompleteModal, setShowProfileCompleteModal] = useState(false);
+
+  // Check if profile is complete on mount
+  useEffect(() => {
+    async function checkProfileCompletion() {
+      if (!account || !isConnected) return;
+
+      try {
+        const userDetails = await getUserDetails(account);
+        // If profile is not completed, show the modal
+        if (!userDetails.profileCompleted) {
+          setShowProfileCompleteModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking profile completion:', error);
+      }
+    }
+
+    checkProfileCompletion();
+  }, [account, isConnected]);
 
   return (
     <main className="min-h-screen pb-20">
@@ -61,6 +87,17 @@ export default function ProfilePage() {
       <PasswordModal 
         isOpen={showPasswordModal} 
         onClose={() => setShowPasswordModal(false)} 
+      />
+      <ProfileCompleteModal
+        isOpen={showProfileCompleteModal}
+        onClose={() => {
+          setShowProfileCompleteModal(false);
+          router.push('/dashboard');
+        }}
+        onSuccess={() => {
+          setShowProfileCompleteModal(false);
+          router.push('/dashboard');
+        }}
       />
     </main>
   );

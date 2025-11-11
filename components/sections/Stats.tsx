@@ -1,74 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getCurrentPool, getPoolInfo } from "@/lib/web3/pools";
-import { getSpeedTrackReadOnly } from "@/lib/web3/contracts";
-import { ethers } from "ethers";
+import { usePlatformStats } from "@/lib/web3/hooks/usePlatformStats";
 import StatCard from "@/components/ui/StatCard";
 
 export default function Stats() {
-  const [stats, setStats] = useState({
-    currentPool: 0,
-    totalLiquidity: "0",
-    poolProgress: 0,
-    investorCount: 0
-  });
+  const { stats, isLoading } = usePlatformStats();
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const poolNum = await getCurrentPool();
-        const poolInfo = await getPoolInfo(poolNum);
-        const speedTrack = await getSpeedTrackReadOnly();
-        const liquidity = await speedTrack.getTotalLiquidity();
+  if (isLoading && !stats) {
+    return (
+      <section className="px-4 mb-8">
+        <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 rounded-3xl p-6 border border-gray-700 backdrop-blur-sm">
+          <div className="flex items-center justify-center py-8">
+            <i className="fas fa-spinner fa-spin text-2xl text-neon-blue"></i>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
-        setStats({
-          currentPool: poolNum,
-          totalLiquidity: ethers.formatEther(liquidity),
-          poolProgress: poolInfo.progress,
-          investorCount: poolInfo.investorCount
-        });
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
-      }
-    }
-
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const activationRate = stats && stats.totalUsers > 0 
+    ? (stats.totalActivations / stats.totalUsers) * 100 
+    : 0;
 
   return (
     <section className="px-4 mb-8">
       <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 rounded-3xl p-6 border border-gray-700 backdrop-blur-sm">
         <h3 className="text-center text-lg font-orbitron font-bold mb-6 text-neon-blue">
-          Live Racing Stats
+          Live Platform Stats
         </h3>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
           <StatCard 
-            value={`Pool #${stats.currentPool}`}
-            label="Current Pool" 
+            value={stats?.totalUsers.toLocaleString() || "0"}
+            label="Total Users" 
             color="text-neon-blue"
-            progress={stats.poolProgress}
+            progress={activationRate}
           />
           <StatCard 
-            value={`${parseFloat(stats.totalLiquidity).toFixed(0)} USDT`}
-            label="Total Liquidity" 
+            value={`$${parseFloat(stats?.totalInvested || '0').toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+            label="Total Invested" 
             color="text-electric-purple"
             progress={75}
           />
           <StatCard 
-            value={stats.currentPool > 0 ? (stats.currentPool - 1).toString() : "0"}
-            label="Pools Completed" 
+            value={stats?.activePools.toString() || "0"}
+            label="Active Pools" 
             color="text-green-400"
             progress={100}
           />
           <StatCard 
-            value={stats.investorCount.toString()}
-            label="Active Investors" 
+            value={stats?.totalActivations.toString() || "0"}
+            label="Activations" 
             color="text-yellow-400"
-            progress={66}
+            progress={activationRate}
           />
         </div>
 
@@ -79,7 +63,7 @@ export default function Stats() {
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse-custom"></div>
-            <span className="text-gray-400">Real-time Rewards</span>
+            <span className="text-gray-400">Real-time Data</span>
           </div>
         </div>
       </div>

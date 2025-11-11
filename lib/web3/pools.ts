@@ -2,119 +2,144 @@ import { ethers } from 'ethers';
 import { getSpeedTrackContract, getSpeedTrackReadOnly, checkUSDTAllowance, approveUSDT } from './contracts';
 
 export interface PoolInfo {
-  poolNumber: number;
-  capacity: string;
-  currentAmount: string;
-  filled: boolean;
+  poolIndex: number;
+  size: string;
+  currentFilled: string;
+  isGlobal: boolean;
+  owner: string;
+  unpaidCapital: string;
+  queueLength: number;
   progress: number;
-  investorCount: number;
 }
 
-export async function getCurrentPool(): Promise<number> {
+// Helper function to safely format BigInt values
+function safeFormatUnits(value: any, decimals: number): string {
   try {
-    const speedTrack = await getSpeedTrackReadOnly();
-    const currentPool = await speedTrack.getCurrentPool();
-    return Number(currentPool);
-  } catch (error: any) {
-    console.error('Error fetching current pool:', error);
-    // Return default pool 1 instead of throwing
-    return 1;
+    if (!value || value === null || value === undefined) return '0';
+    return ethers.formatUnits(value, decimals);
+  } catch (error) {
+    console.error('Error formatting units:', error);
+    return '0';
   }
 }
 
-export async function getPoolInfo(poolNumber: number): Promise<PoolInfo> {
+// Helper function to safely calculate percentage
+function safePercentage(numerator: number, denominator: number): number {
+  if (!denominator || denominator === 0 || !isFinite(denominator)) return 0;
+  if (!numerator || !isFinite(numerator)) return 0;
+  
+  const result = (numerator / denominator) * 100;
+  
+  if (!isFinite(result) || isNaN(result)) return 0;
+  return Math.min(Math.max(result, 0), 100); // Clamp between 0 and 100
+}
+
+export async function getPoolInfo(poolIndex: number): Promise<PoolInfo> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const [poolData, investors] = await Promise.all([
-      speedTrack.getPoolInfo(poolNumber),
-      speedTrack.getPoolInvestors(poolNumber).catch(() => [])
-    ]);
+    const poolData = await speedTrack.getPoolInfo(poolIndex);
     
-    const capacity = ethers.formatEther(poolData.capacity);
-    const currentAmount = ethers.formatEther(poolData.currentAmount);
-    const progress = (parseFloat(currentAmount) / parseFloat(capacity)) * 100;
+    // Safe BigInt to string conversion with validation
+    const size = safeFormatUnits(poolData.size, 6);
+    const currentFilled = safeFormatUnits(poolData.currentFilled, 6);
+    const unpaidCapital = safeFormatUnits(poolData.unpaidCapital, 6);
+    
+    // Safe division with validation
+    const sizeNum = parseFloat(size);
+    const filledNum = parseFloat(currentFilled);
+    const progress = safePercentage(filledNum, sizeNum);
     
     return {
-      poolNumber,
-      capacity,
-      currentAmount,
-      filled: poolData.filled,
-      progress: Math.min(progress, 100),
-      investorCount: investors.length
+      poolIndex,
+      size,
+      currentFilled,
+      isGlobal: poolData.isGlobal || false,
+      owner: poolData.owner || ethers.ZeroAddress,
+      unpaidCapital,
+      queueLength: Number(poolData.queueLength || 0),
+      progress
     };
   } catch (error: any) {
-    console.error(`Error fetching pool ${poolNumber} info:`, error);
-    // Return default pool info
+    console.error(`Error fetching pool ${poolIndex} info:`, error?.message || error);
+    
+    // Return safe defaults
     return {
-      poolNumber,
-      capacity: '0',
-      currentAmount: '0',
-      filled: false,
-      progress: 0,
-      investorCount: 0
+      poolIndex,
+      size: '0',
+      currentFilled: '0',
+      isGlobal: false,
+      owner: ethers.ZeroAddress,
+      unpaidCapital: '0',
+      queueLength: 0,
+      progress: 0
     };
   }
 }
 
-export async function investInPool(amount: string, userAddress: string): Promise<ethers.ContractTransactionResponse> {
+export async function investInPool(poolIndex: number, amount: string, userAddress: string): Promise<ethers.ContractTransactionResponse> {
   const speedTrack = await getSpeedTrackContract();
-  const amountWei = ethers.parseEther(amount);
-  const minAmount = ethers.parseEther('10');
+  const amountWei = ethers.parseUnits(amount, 6);
   
-  if (amountWei < minAmount) {
-    throw new Error('Minimum investment is 10 USDT');
-  }
-  
-  const currentPool = await getCurrentPool();
-  const maxAmount = currentPool === 1 ? ethers.parseEther('50') : ethers.parseEther('500');
-  
-  if (amountWei > maxAmount) {
-    const maxFormatted = ethers.formatEther(maxAmount);
-    throw new Error(`Maximum investment for pool ${currentPool} is ${maxFormatted} USDT`);
-  }
-  
+  // Check allowance
   const allowance = await checkUSDTAllowance(userAddress);
-  if (ethers.parseEther(allowance) < amountWei) {
+  if (ethers.parseUnits(allowance, 6) < amountWei) {
     const approveTx = await approveUSDT(amount);
     await approveTx.wait();
   }
 
-  return await speedTrack.investInPool(amountWei);
+  return await speedTrack.invest(poolIndex, amountWei);
 }
 
-export async function getPoolInvestors(poolNumber: number): Promise<string[]> {
+export async function getInvestmentInPool(userAddress: string, poolIndex: number): Promise<string> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    return await speedTrack.getPoolInvestors(poolNumber);
+    const investment = await speedTrack.getInvestmentInPool(userAddress, poolIndex);
+    return safeFormatUnits(investment, 6);
   } catch (error) {
-    return [];
+    console.error('Error fetching investment in pool:', error);
+    return '0';
   }
 }
 
-export async function getUserPoolInvestments(userAddress: string): Promise<{ poolNumber: number; amount: string; canClaim: boolean }[]> {
+export async function getPendingRefund(userAddress: string, poolIndex: number): Promise<string> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const userDetails = await speedTrack.getUserDetails(userAddress);
-    const investedPool = Number(userDetails.investedPoolNumber);
-    
-    if (investedPool === 0) {
-      return [];
-    }
-    
-    const poolInfo = await getPoolInfo(investedPool);
-    const userInvestment = ethers.formatEther(userDetails.totalInvestment);
-    
-    return [{
-      poolNumber: investedPool,
-      amount: userInvestment,
-      canClaim: poolInfo.filled
-    }];
+    const refund = await speedTrack.getPendingRefund(userAddress, poolIndex);
+    return safeFormatUnits(refund, 6);
   } catch (error) {
-    return [];
+    console.error('Error fetching pending refund:', error);
+    return '0';
   }
 }
 
-export async function claimPoolReturn(poolNumber: number): Promise<ethers.ContractTransactionResponse> {
-  const speedTrack = await getSpeedTrackContract();
-  return await speedTrack.claimPoolReturn(poolNumber);
+export async function isEligibleForGlobal(userAddress: string): Promise<boolean> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    return await speedTrack.isEligibleForGlobal(userAddress);
+  } catch (error) {
+    console.error('Error checking global eligibility:', error);
+    return false;
+  }
+}
+
+export async function getMaxInvestment(levelIndex: number): Promise<string> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const maxInv = await speedTrack.maxInvestments(levelIndex);
+    return safeFormatUnits(maxInv, 6);
+  } catch (error) {
+    console.error('Error fetching max investment:', error);
+    return '0';
+  }
+}
+
+export async function getInitialPoolSize(): Promise<string> {
+  try {
+    const speedTrack = await getSpeedTrackReadOnly();
+    const size = await speedTrack.INITIAL_POOL_SIZE();
+    return safeFormatUnits(size, 6);
+  } catch (error) {
+    console.error('Error fetching initial pool size:', error);
+    return '0';
+  }
 }

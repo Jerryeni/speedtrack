@@ -28,7 +28,7 @@ export default function PersonalInfo({ isEditMode, setIsEditMode }: PersonalInfo
       try {
         const userData = await getUserDetails(account);
         setFullName(userData.name || "");
-        setPhoneNumber(userData.mobile || "");
+        setPhoneNumber(userData.mobileNumber || "");
         setEmailAddress(userData.email || "");
       } catch (error) {
         console.error("Failed to fetch user data:", error);
@@ -41,10 +41,66 @@ export default function PersonalInfo({ isEditMode, setIsEditMode }: PersonalInfo
   }, [account, isConnected, isCorrectChain]);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    showToast("Profile data is stored on blockchain and cannot be edited after activation");
-    setIsSaving(false);
-    setIsEditMode(false);
+    if (!account) {
+      showToast("Please connect your wallet", 'error');
+      return;
+    }
+
+    // Validate inputs
+    if (!fullName || fullName.trim().length < 2) {
+      showToast("Please enter a valid name", 'error');
+      return;
+    }
+
+    if (!emailAddress || !emailAddress.includes('@')) {
+      showToast("Please enter a valid email", 'error');
+      return;
+    }
+
+    if (!phoneNumber || phoneNumber.trim().length < 10) {
+      showToast("Please enter a valid phone number", 'error');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      showToast("Updating profile...", 'info');
+
+      // Import completeProfile function
+      const { completeProfile } = await import('@/lib/web3/activation');
+      
+      // Extract country code and mobile number
+      // Assuming phoneNumber format is like "+1234567890" or "1234567890"
+      let countryCode = "+1";
+      let mobileNumber = phoneNumber;
+      
+      if (phoneNumber.startsWith('+')) {
+        // Extract country code (first 1-3 digits after +)
+        const match = phoneNumber.match(/^\+(\d{1,3})(.+)$/);
+        if (match) {
+          countryCode = `+${match[1]}`;
+          mobileNumber = match[2];
+        }
+      }
+
+      const tx = await completeProfile({
+        name: fullName.trim(),
+        email: emailAddress.trim(),
+        countryCode: countryCode,
+        mobileNumber: mobileNumber.trim()
+      });
+
+      showToast("Transaction submitted! Waiting for confirmation...", 'info');
+      await tx.wait();
+      
+      showToast("Profile updated successfully! 🎉", 'success');
+      setIsEditMode(false);
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      showToast(error.message || "Failed to update profile", 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
