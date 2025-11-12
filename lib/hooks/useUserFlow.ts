@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWeb3 } from '@/lib/web3/Web3Context';
 import { getUserDetails, checkAccountActivation, getUserId } from '@/lib/web3/activation';
+import { cacheUserState, getCachedUserState } from '@/lib/web3/registrationCache';
 
 export interface UserFlowState {
   isConnected: boolean;
@@ -61,6 +62,85 @@ export function useUserFlow() {
 
         console.log('🔍 Checking user flow for:', account);
 
+        // Check cache first
+        const cached = getCachedUserState(account);
+        if (cached && cached.isRegistered) {
+          console.log('✅ Using cached registration state');
+          
+          // Still verify activation and profile from contract
+          try {
+            const isActivated = await checkAccountActivation(account);
+            const userDetails = await getUserDetails(account);
+            const isProfileComplete = userDetails.profileCompleted === true;
+            
+            // Update cache with latest data
+            cacheUserState(account, {
+              isRegistered: true,
+              isActivated,
+              profileCompleted: isProfileComplete,
+              userId: cached.userId
+            });
+            
+            if (!isActivated) {
+              setFlowState({
+                isConnected: true,
+                isRegistered: true,
+                isActivated: false,
+                isProfileComplete: false,
+                isLoading: false,
+                currentStep: 'activate',
+                canAccessDashboard: false
+              });
+              setLastSuccessfulCheck(`flow_${account}`);
+              setRetryCount(0);
+              return;
+            }
+            
+            if (!isProfileComplete) {
+              setFlowState({
+                isConnected: true,
+                isRegistered: true,
+                isActivated: true,
+                isProfileComplete: false,
+                isLoading: false,
+                currentStep: 'profile',
+                canAccessDashboard: false
+              });
+              setLastSuccessfulCheck(`flow_${account}`);
+              setRetryCount(0);
+              return;
+            }
+            
+            setFlowState({
+              isConnected: true,
+              isRegistered: true,
+              isActivated: true,
+              isProfileComplete: true,
+              isLoading: false,
+              currentStep: 'complete',
+              canAccessDashboard: true
+            });
+            setLastSuccessfulCheck(`flow_${account}`);
+            setRetryCount(0);
+            return;
+          } catch (error) {
+            console.log('⚠️ Error checking activation/profile, using cache');
+            // If we have cache saying user is registered, trust it
+            setFlowState({
+              isConnected: true,
+              isRegistered: true,
+              isActivated: cached.isActivated,
+              isProfileComplete: cached.profileCompleted,
+              isLoading: false,
+              currentStep: cached.profileCompleted ? 'complete' : (cached.isActivated ? 'profile' : 'activate'),
+              canAccessDashboard: cached.profileCompleted
+            });
+            setLastSuccessfulCheck(`flow_${account}`);
+            setRetryCount(0);
+            return;
+          }
+        }
+
         // Step 2: Check registration (using getUserId - most reliable)
         const userId = await getUserId(account);
         const userIdNum = parseInt(userId);
@@ -88,6 +168,14 @@ export function useUserFlow() {
         
         if (!isActivated) {
           console.log('❌ User not activated, stopping flow check');
+          // Cache registered state
+          cacheUserState(account, {
+            isRegistered: true,
+            isActivated: false,
+            profileCompleted: false,
+            userId
+          });
+          
           setFlowState({
             isConnected: true,
             isRegistered: true,
@@ -107,6 +195,14 @@ export function useUserFlow() {
         
         if (!isProfileComplete) {
           console.log('❌ Profile not complete, stopping flow check');
+          // Cache activated state
+          cacheUserState(account, {
+            isRegistered: true,
+            isActivated: true,
+            profileCompleted: false,
+            userId
+          });
+          
           setFlowState({
             isConnected: true,
             isRegistered: true,
@@ -121,6 +217,15 @@ export function useUserFlow() {
 
         // All steps complete - user can access dashboard
         console.log('✅ All flow checks passed! User can access dashboard');
+        
+        // Cache the successful state
+        cacheUserState(account, {
+          isRegistered: true,
+          isActivated: true,
+          profileCompleted: true,
+          userId
+        });
+        
         setFlowState({
           isConnected: true,
           isRegistered: true,
@@ -333,11 +438,22 @@ export function useUserFlow() {
     }
   };
 
+  /**
+   * Force clear cache and refresh (for debugging)
+   */
+  const forceClearAndRefresh = () => {
+    console.log('🔄 Force clearing cache and refreshing...');
+    setLastSuccessfulCheck(null);
+    setRetryCount(0);
+    refreshFlow();
+  };
+
   return {
     ...flowState,
     enforceFlow,
     getStepMessage,
     getNextAction,
-    refreshFlow
+    refreshFlow,
+    forceClearAndRefresh
   };
 }

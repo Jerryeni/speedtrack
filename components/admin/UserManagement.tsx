@@ -16,7 +16,8 @@ export default function UserManagement() {
     try {
       setIsLoading(true);
       const speedTrack = await getSpeedTrackReadOnly();
-      const address = await speedTrack.getUserById(parseInt(userId));
+      // Use the public idToUser mapping instead of getUserById function
+      const address = await speedTrack.idToUser(parseInt(userId));
       
       if (address === ethers.ZeroAddress) {
         alert("User not found");

@@ -268,8 +268,8 @@ export async function verifyUserRegistration(address: string) {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
     
-    // Check user ID
-    const userId = await speedTrack.getUserId(address);
+    // Check user ID using the public userId mapping
+    const userId = await speedTrack.userId(address);
     console.log('User ID:', userId.toString());
     
     if (userId > BigInt(0)) {

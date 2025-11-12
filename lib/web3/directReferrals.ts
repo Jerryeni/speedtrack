@@ -51,7 +51,8 @@ export async function getDirectReferralsDetailed(
         
         // Get full user info for this referral
         const userInfo = await contract.getUserInfo(referralAddress);
-        const userId = await contract.getUserId(referralAddress);
+        // Use the public userId mapping instead of getUserId function
+        const userId = await contract.userId(referralAddress);
         
         referrals.push({
           address: referralAddress,

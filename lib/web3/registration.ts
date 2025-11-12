@@ -82,9 +82,10 @@ export async function isUserRegistered(address: string): Promise<boolean> {
   try {
     console.log('Checking registration for address:', address);
     const speedTrack = await getSpeedTrackReadOnly();
-    const userId = await speedTrack.getUserId(address);
+    // Use the public userId mapping
+    const userId = await speedTrack.userId(address);
     console.log('User ID from contract:', userId.toString());
-    const isRegistered = userId > 0;
+    const isRegistered = Number(userId) > 0;
     console.log('Is registered:', isRegistered);
     return isRegistered;
   } catch (error) {
@@ -165,12 +166,13 @@ export async function validateReferralCode(referralCode: string): Promise<{ vali
     if (/^\d+$/.test(referralCode)) {
       try {
         const userId = parseInt(referralCode);
-        const referrerAddress = await speedTrack.getUserById(userId);
+        // Use the public idToUser mapping instead of getUserById function
+        const referrerAddress = await speedTrack.idToUser(userId);
         
         if (referrerAddress && referrerAddress !== ethers.ZeroAddress) {
-          // Verify the user is actually registered
-          const referrerId = await speedTrack.getUserId(referrerAddress);
-          if (referrerId > 0) {
+          // Verify the user is actually registered using the public userId mapping
+          const referrerId = await speedTrack.userId(referrerAddress);
+          if (Number(referrerId) > 0) {
             return {
               valid: true,
               message: 'Valid referral code',

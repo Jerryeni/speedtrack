@@ -31,16 +31,16 @@ export default function FlowDebugPage() {
       };
       console.log('getUserId result:', results.checks.getUserId);
 
-      // Check 2: Direct contract call to getUserId
-      console.log('=== CHECK 2: Direct getUserId ===');
+      // Check 2: Direct contract call to userId mapping
+      console.log('=== CHECK 2: Direct userId mapping ===');
       const speedTrack = await getSpeedTrackReadOnly();
-      const directUserId = await speedTrack.getUserId(account);
+      const directUserId = await speedTrack.userId(account);
       results.checks.directGetUserId = {
         value: directUserId.toString(),
         parsed: Number(directUserId),
         isRegistered: Number(directUserId) > 0
       };
-      console.log('Direct getUserId result:', results.checks.directGetUserId);
+      console.log('Direct userId mapping result:', results.checks.directGetUserId);
 
       // Check 3: getUserInfo
       console.log('=== CHECK 3: getUserInfo ===');

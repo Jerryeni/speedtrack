@@ -40,10 +40,10 @@ export default function GetOwnerCode() {
         throw new Error('Failed to get contract owner. Make sure you are on the correct network (BSC Testnet).');
       }
       
-      // Check if owner is registered
+      // Check if owner is registered using the public userId mapping
       let userId;
       try {
-        userId = await speedTrack.getUserId(ownerAddress);
+        userId = await speedTrack.userId(ownerAddress);
       } catch (userErr: any) {
         throw new Error('Failed to check owner registration. Contract might not be properly deployed.');
       }

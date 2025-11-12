@@ -13,34 +13,14 @@ export async function checkAccountActivation(address: string): Promise<boolean> 
     console.log('📞 Checking activation status for:', address);
     const speedTrack = await getSpeedTrackReadOnly();
     
-    // Primary method: Check via getUserInfo activationLevel
-    try {
-      const userInfo = await speedTrack.getUserInfo(address);
-      const activationLevel = Number(userInfo.activationLevel);
-      const isActivated = activationLevel > 0;
-      console.log('Activation level:', activationLevel);
-      console.log(isActivated ? '✅ User IS activated' : '❌ User is NOT activated');
-      return isActivated;
-    } catch (error: any) {
-      console.log('⚠️ getUserInfo failed:', error.message);
-      
-      // If it's a network error, throw it so caller can retry
-      if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
-        throw new Error('Network error - please retry');
-      }
-    }
+    // Use users mapping to check isActivated flag directly
+    const user = await speedTrack.users(address);
+    const isActivated = user.isActivated;
     
-    // Fallback method: Try getActivationStatus if it exists
-    try {
-      const isActivated = await speedTrack.getActivationStatus(address);
-      console.log('getActivationStatus returned:', isActivated);
-      return isActivated;
-    } catch (error: any) {
-      console.log('⚠️ getActivationStatus also failed:', error.message);
-    }
+    console.log('users.isActivated:', isActivated);
+    console.log(isActivated ? '✅ User IS activated' : '❌ User is NOT activated');
     
-    console.log('❌ Could not determine activation status, assuming NOT activated');
-    return false;
+    return isActivated;
   } catch (error: any) {
     console.error('❌ Error checking activation:', error.message);
     
@@ -122,29 +102,23 @@ export async function getUserDetails(address: string) {
     console.log('📞 getUserDetails called for:', address);
     const speedTrack = await getSpeedTrackReadOnly();
     
-    // First check if user is registered by checking their ID
-    const userId = await speedTrack.getUserId(address);
-    const userIdNum = Number(userId);
-    console.log('getUserId returned:', userIdNum);
-    
-    if (userIdNum === 0) {
-      console.log('❌ User not registered (userId = 0)');
-      throw new Error('User not registered');
-    }
-    
-    console.log('✅ User is registered (userId =', userIdNum, ')');
-    
-    // User is registered, get their info
-    // getUserInfo returns: (name, email, countryCode, mobileNumber, activationLevel, referrer, 
-    //                       referrerType, isRootLeader, profileCompleted, investedAmount, 
-    //                       capitalReturned, virtualROIBalance, rewardPoints, uid)
+    // Get user info directly - it contains uid which tells us if registered
     const userInfo = await speedTrack.getUserInfo(address);
+    const uid = Number(userInfo.uid);
+    
     console.log('getUserInfo returned:', {
-      uid: userInfo.uid.toString(),
+      uid: uid,
       activationLevel: userInfo.activationLevel.toString(),
       profileCompleted: userInfo.profileCompleted,
       name: userInfo.name
     });
+    
+    if (uid === 0) {
+      console.log('❌ User not registered (uid = 0)');
+      throw new Error('User not registered');
+    }
+    
+    console.log('✅ User is registered (uid =', uid, ')');
     
     // Safe formatting with validation
     const investedAmount = userInfo.investedAmount ? ethers.formatUnits(userInfo.investedAmount, 6) : '0';
@@ -165,7 +139,7 @@ export async function getUserDetails(address: string) {
       capitalReturned,
       virtualROIBalance,
       rewardPoints: userInfo.rewardPoints ? userInfo.rewardPoints.toString() : '0',
-      uid: userInfo.uid ? userInfo.uid.toString() : userId.toString(),
+      uid: uid.toString(),
       isRegistered: true
     };
     
@@ -191,15 +165,15 @@ export async function getUserDetails(address: string) {
 
 export async function getUserId(address: string): Promise<string> {
   try {
-    console.log('📞 Calling getUserId for address:', address);
+    console.log('📞 Getting user ID for address:', address);
     const speedTrack = await getSpeedTrackReadOnly();
-    console.log('Contract instance obtained');
     
-    const userId = await speedTrack.getUserId(address);
-    const userIdString = userId.toString();
-    console.log('✅ getUserId returned:', userIdString);
+    // Use getUserInfo to get uid
+    const userInfo = await speedTrack.getUserInfo(address);
+    const userId = userInfo.uid.toString();
+    console.log('✅ getUserInfo.uid returned:', userId);
     
-    return userIdString;
+    return userId;
   } catch (error: any) {
     console.error('❌ Error in getUserId:', error);
     console.error('Error message:', error.message);
@@ -218,7 +192,8 @@ export async function getUserId(address: string): Promise<string> {
 export async function getUserById(userId: number): Promise<string> {
   try {
     const speedTrack = await getSpeedTrackReadOnly();
-    const address = await speedTrack.getUserById(userId);
+    // Use the public idToUser mapping instead of getUserById function
+    const address = await speedTrack.idToUser(userId);
     return address;
   } catch (error) {
     return ethers.ZeroAddress;
@@ -236,34 +211,26 @@ export async function isUserRegistered(address: string): Promise<boolean> {
     console.log('📞 Checking if user is registered:', address);
     const speedTrack = await getSpeedTrackReadOnly();
     
-    // Method 1: Check getUserId (most reliable)
-    const userId = await speedTrack.getUserId(address);
-    const userIdNum = Number(userId);
-    console.log('getUserId returned:', userIdNum);
+    // Use getUserInfo to check registration - it returns uid
+    const userInfo = await speedTrack.getUserInfo(address);
+    const uid = Number(userInfo.uid);
+    console.log('getUserInfo uid:', uid);
     
-    if (userIdNum > 0) {
-      console.log('✅ User IS registered (userId > 0)');
+    if (uid > 0) {
+      console.log('✅ User IS registered (uid > 0)');
       return true;
     }
     
-    // Method 2: Double-check with getUserInfo
-    try {
-      const userInfo = await speedTrack.getUserInfo(address);
-      const uid = Number(userInfo.uid);
-      console.log('getUserInfo uid:', uid);
-      
-      if (uid > 0) {
-        console.log('✅ User IS registered (uid > 0)');
-        return true;
-      }
-    } catch (infoError) {
-      console.log('getUserInfo check failed:', infoError);
-    }
-    
-    console.log('❌ User is NOT registered');
+    console.log('❌ User is NOT registered (uid = 0)');
     return false;
   } catch (error: any) {
     console.error('❌ Error checking registration:', error.message);
+    
+    // If network error, throw it for retry
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
+      throw error;
+    }
+    
     return false;
   }
 }

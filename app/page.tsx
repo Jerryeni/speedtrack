@@ -117,11 +117,16 @@ function HomeContent() {
         
         // IMPORTANT: Hide registration modal if registered
         // This ensures registered users NEVER see the registration modal
-        if (showRegisterModal) {
+        if (showRegisterModal && isRegistered) {
           console.log('🔒 Closing registration modal - user is already registered');
           setShowRegisterModal(false);
         }
-        console.log('✓ User is registered - registration modal will NOT show');
+        
+        // Force close modal if user is registered
+        if (isRegistered) {
+          console.log('✓ User is registered - registration modal will NOT show');
+          setShowRegisterModal(false);
+        }
         
         // If registered but not activated, and user came here wanting to activate
         if (!isActivated && wantsToActivate) {
