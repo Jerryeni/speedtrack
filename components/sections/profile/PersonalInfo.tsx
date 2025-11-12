@@ -93,8 +93,14 @@ export default function PersonalInfo({ isEditMode, setIsEditMode }: PersonalInfo
       showToast("Transaction submitted! Waiting for confirmation...", 'info');
       await tx.wait();
       
-      showToast("Profile updated successfully! 🎉", 'success');
+      showToast("Profile updated successfully! Redirecting to dashboard... 🎉", 'success');
       setIsEditMode(false);
+      
+      // Wait a moment for user to see the success message
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
     } catch (error: any) {
       console.error('Profile update error:', error);
       showToast(error.message || "Failed to update profile", 'error');

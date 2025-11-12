@@ -60,17 +60,7 @@ export async function activateAccount(levelIndex: number, userAddress: string): 
   
   const speedTrack = await getSpeedTrackContract();
   const contractAddress = await speedTrack.getAddress();
-  console.log('Contract Address:', contractAddress);
-  console.log('Expected Address:', '0x406249AF7Eb8A32c1F79b9BB1A9DB57DB1EB3D23');
-  
-  // Verify we're using the correct contract
-  if (contractAddress.toLowerCase() !== '0x406249AF7Eb8A32c1F79b9BB1A9DB57DB1EB3D23'.toLowerCase()) {
-    console.error('❌ CONTRACT ADDRESS MISMATCH!');
-    console.error('Using:', contractAddress);
-    console.error('Expected:', '0x406249AF7Eb8A32c1F79b9BB1A9DB57DB1EB3D23');
-    throw new Error('Contract address mismatch - check configuration');
-  }
-  console.log('✅ Contract address verified');
+  console.log('Using SpeedTrack Contract:', contractAddress);
   
   // Check if already activated
   const isActivated = await checkAccountActivation(userAddress);

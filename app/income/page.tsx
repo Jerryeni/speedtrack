@@ -5,6 +5,7 @@ import IncomeSummary from "@/components/sections/income/IncomeSummary";
 import IncomeBreakdown from "@/components/sections/income/IncomeBreakdown";
 import RecentTransactions from "@/components/sections/income/RecentTransactions";
 import PoolInvestmentBreakdown from "@/components/sections/PoolInvestmentBreakdown";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function IncomePage() {
   const [filterType, setFilterType] = useState("all");
@@ -41,6 +42,8 @@ export default function IncomePage() {
       <IncomeBreakdown filterType={filterType} />
       <PoolInvestmentBreakdown />
       <RecentTransactions filterDate={filterDate} />
+
+      <BottomNav />
     </main>
   );
 }

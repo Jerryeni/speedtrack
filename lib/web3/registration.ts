@@ -39,14 +39,8 @@ export async function registerUser(data: RegistrationData): Promise<ethers.Contr
   console.log('    - _referralCode:', data.referralCode);
   console.log('    - _leader:', leaderAddress);
 
-  // Verify contract address before calling
-  console.log('Verifying contract address...');
-  console.log('  Expected:', '0x406249AF7Eb8A32c1F79b9BB1A9DB57DB1EB3D23');
-  if (contractAddress.toLowerCase() !== '0x406249AF7Eb8A32c1F79b9BB1A9DB57DB1EB3D23'.toLowerCase()) {
-    console.error('❌ CONTRACT ADDRESS MISMATCH!');
-    throw new Error('Contract address mismatch - check configuration');
-  }
-  console.log('✅ Contract address verified');
+  // Log contract address for debugging
+  console.log('Using SpeedTrack Contract:', contractAddress);
 
   try {
     // Step 4: Call register function

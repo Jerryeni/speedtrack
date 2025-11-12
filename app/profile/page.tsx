@@ -7,11 +7,11 @@ import { getUserDetails } from "@/lib/web3/activation";
 import ProfileHeader from "@/components/sections/profile/ProfileHeader";
 import PersonalInfo from "@/components/sections/profile/PersonalInfo";
 import WalletInfo from "@/components/sections/profile/WalletInfo";
-import AccountPreferences from "@/components/sections/profile/AccountPreferences";
 import AccountActions from "@/components/sections/profile/AccountActions";
 import QRModal from "@/components/modals/QRModal";
 import PasswordModal from "@/components/modals/PasswordModal";
 import ProfileCompleteModal from "@/components/modals/ProfileCompleteModal";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -77,7 +77,7 @@ export default function ProfilePage() {
       <ProfileHeader />
       <PersonalInfo isEditMode={isEditMode} setIsEditMode={setIsEditMode} />
       <WalletInfo onShowQR={() => setShowQRModal(true)} />
-      <AccountPreferences />
+      
       <AccountActions />
 
       <QRModal 
@@ -105,6 +105,8 @@ export default function ProfilePage() {
           window.location.href = '/dashboard';
         }}
       />
+
+      <BottomNav />
     </main>
   );
 }
