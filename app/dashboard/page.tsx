@@ -12,6 +12,8 @@ import WalletStatus from "@/components/sections/WalletStatus";
 import PoolProgress from "@/components/sections/PoolProgress";
 import DailyRewardTimer from "@/components/sections/DailyRewardTimer";
 import ReferralProgram from "@/components/sections/ReferralProgram";
+import GlobalPoolStatus from "@/components/sections/GlobalPoolStatus";
+import RootLeaderDashboard from "@/components/sections/RootLeaderDashboard";
 import StatCard from "@/components/ui/StatCard";
 import ActivationModal from "@/components/modals/ActivationModal";
 import PoolInvestModal from "@/components/modals/PoolInvestModal";
@@ -216,6 +218,10 @@ function DashboardContent() {
       </section>
 
       <DailyRewardTimer />
+
+      <GlobalPoolStatus />
+
+      <RootLeaderDashboard />
 
       {isConnected && isCorrectChain && (
         <section className="px-4 mb-8">

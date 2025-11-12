@@ -46,24 +46,7 @@ export default function TeamStatistics({ stats, isLoading }: TeamStatisticsProps
           ))}
         </div>
 
-        <div className="bg-gray-800 rounded-lg sm:rounded-xl p-2 sm:p-3">
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            <h4 className="font-semibold text-xs sm:text-sm">Team Growth Trend</h4>
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400"></div>
-              <span className="text-xs text-green-400">Growing</span>
-            </div>
-          </div>
-          <div className="h-16 sm:h-24 flex items-end space-x-0.5 sm:space-x-1">
-            {[10, 15, 12, 20, 18, 25, 30, 35, 40, 45].map((height, index) => (
-              <div
-                key={index}
-                className="flex-1 bg-neon-blue rounded-t transition-all duration-300"
-                style={{ height: `${height}%` }}
-              ></div>
-            ))}
-          </div>
-        </div>
+        {/* Removed hardcoded growth trend chart - will be replaced with real historical data in future update */}
       </div>
     </section>
   );

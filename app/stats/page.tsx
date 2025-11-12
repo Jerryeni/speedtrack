@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import PlatformStatsDashboard from "@/components/sections/stats/PlatformStatsDashboard";
 import LiveActivityFeed from "@/components/sections/stats/LiveActivityFeed";
+import LevelBreakdown from "@/components/sections/LevelBreakdown";
 import { usePlatformStats } from "@/lib/web3/hooks/usePlatformStats";
 import { useState, useEffect } from "react";
 
@@ -30,8 +31,17 @@ export default function StatsPage() {
               <p className="text-xs text-gray-400">Live blockchain analytics</p>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
-            <i className="fas fa-chart-bar text-neon-blue"></i>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => router.push('/system')}
+              className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center hover:bg-purple-500/30 transition-colors"
+              title="System Configuration"
+            >
+              <i className="fas fa-cog text-purple-400"></i>
+            </button>
+            <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
+              <i className="fas fa-chart-bar text-neon-blue"></i>
+            </div>
           </div>
         </div>
       </header>
@@ -225,6 +235,9 @@ export default function StatsPage() {
           </div>
         </div>
       </section>
+
+      {/* Level Breakdown */}
+      <LevelBreakdown />
 
       {/* Live Activity Feed */}
       <section className="px-4 py-6">

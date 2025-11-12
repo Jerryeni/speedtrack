@@ -79,9 +79,9 @@ export async function activateAccount(levelIndex: number, userAddress: string): 
   }
   console.log('✓ User is not activated yet');
 
-  // Hardcoded activation fees based on level (from your modal)
-  const activationFees = ['10', '50', '100', '250', '500'];
-  const feeAmount = activationFees[levelIndex] || '10';
+  // Get activation fee from contract
+  const { getActivationFee } = await import('./systemConfig');
+  const feeAmount = await getActivationFee(levelIndex);
   console.log('Activation fee for level', levelIndex, ':', feeAmount, 'USDT');
   
   // ALWAYS approve USDT (with max amount) to ensure it works
@@ -236,9 +236,9 @@ export async function getUserById(userId: number): Promise<string> {
 }
 
 export async function getActivationFee(levelIndex: number): Promise<string> {
-  // Hardcoded activation fees based on level
-  const activationFees = ['10', '50', '100', '250', '500'];
-  return activationFees[levelIndex] || '10';
+  // Import from systemConfig to get from contract
+  const { getActivationFee: getContractFee } = await import('./systemConfig');
+  return await getContractFee(levelIndex);
 }
 
 export async function isUserRegistered(address: string): Promise<boolean> {

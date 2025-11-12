@@ -4,6 +4,7 @@ import { useState } from "react";
 import IncomeSummary from "@/components/sections/income/IncomeSummary";
 import IncomeBreakdown from "@/components/sections/income/IncomeBreakdown";
 import RecentTransactions from "@/components/sections/income/RecentTransactions";
+import PoolInvestmentBreakdown from "@/components/sections/PoolInvestmentBreakdown";
 
 export default function IncomePage() {
   const [filterType, setFilterType] = useState("all");
@@ -38,6 +39,7 @@ export default function IncomePage() {
 
       <IncomeSummary />
       <IncomeBreakdown filterType={filterType} />
+      <PoolInvestmentBreakdown />
       <RecentTransactions filterDate={filterDate} />
     </main>
   );

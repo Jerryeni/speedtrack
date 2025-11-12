@@ -12,6 +12,7 @@ import RecentActivity from "@/components/sections/referral/RecentActivity";
 import RewardsProgram from "@/components/sections/referral/RewardsProgram";
 import TeamStatistics from "@/components/sections/referral/TeamStatistics";
 import ReferralTools from "@/components/sections/referral/ReferralTools";
+import DirectReferralsList from "@/components/sections/DirectReferralsList";
 import BottomNav from "@/components/layout/BottomNav";
 
 export default function ReferralPage() {
@@ -28,12 +29,25 @@ export default function ReferralPage() {
       }
 
       try {
-        const [stats, levels] = await Promise.all([
+        const { getDirectMembers, getTotalTeamCount } = await import('@/lib/web3/teamStats');
+        
+        const [stats, levels, directMembers, totalTeam] = await Promise.all([
           getReferralStats(account),
-          getNetworkLevels(account)
+          getNetworkLevels(account),
+          getDirectMembers(),
+          getTotalTeamCount()
         ]);
 
-        setReferralStats(stats);
+        // Enhance stats with new data
+        const enhancedStats = {
+          ...stats,
+          directReferrals: directMembers.length,
+          totalReferrals: totalTeam,
+          activeMembers: directMembers.filter(m => m.isActivated).length,
+          teamVolume: directMembers.reduce((sum, m) => sum + parseFloat(m.investedAmount), 0).toFixed(2)
+        };
+
+        setReferralStats(enhancedStats);
         setNetworkLevels(levels);
       } catch (error) {
         console.error('Error fetching referral data:', error);
@@ -115,6 +129,7 @@ export default function ReferralPage() {
       {/* <RecentActivity /> */}
       {/* <RewardsProgram /> */}
       <TeamStatistics stats={referralStats} isLoading={isLoading} />
+      <DirectReferralsList />
       {/* <ReferralTools /> */}
       
       <BottomNav />

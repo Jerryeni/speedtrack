@@ -35,6 +35,62 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
 
       try {
         setIsLoading(true);
+        
+        // Try using the new getRecentActions function first (more efficient)
+        const { getFormattedRecentActions } = await import('@/lib/web3/userActivity');
+        const recentActions = await getFormattedRecentActions(account);
+        
+        if (recentActions.length > 0) {
+          const formattedTransactions: Transaction[] = recentActions.map((action, index) => {
+            let icon = 'fa-exchange-alt';
+            let color = 'text-gray-400';
+            let title = action.action;
+            
+            if (action.action.includes('Investment')) {
+              icon = 'fa-arrow-up';
+              color = 'text-blue-400';
+              title = 'Pool Investment';
+            } else if (action.action.includes('ROI')) {
+              icon = 'fa-coins';
+              color = 'text-green-400';
+              title = 'ROI Claimed';
+            } else if (action.action.includes('Level')) {
+              icon = 'fa-users';
+              color = 'text-purple-400';
+              title = 'Level Income';
+            } else if (action.action.includes('Capital')) {
+              icon = 'fa-undo';
+              color = 'text-yellow-400';
+              title = 'Capital Returned';
+            } else if (action.action.includes('ST')) {
+              icon = 'fa-gift';
+              color = 'text-pink-400';
+              title = 'ST Token Reward';
+            } else if (action.action.includes('Activation')) {
+              icon = 'fa-check-circle';
+              color = 'text-green-400';
+              title = 'Account Activated';
+            }
+            
+            return {
+              type: action.action.toLowerCase().replace(/\s+/g, '_'),
+              title,
+              amount: action.amount,
+              timestamp: action.timestamp,
+              icon,
+              color,
+              poolIndex: parseInt(action.poolIndex) || undefined,
+              fromUser: action.fromUser !== ethers.ZeroAddress ? action.fromUser : undefined,
+              blockNumber: action.timestamp // Use timestamp as fallback
+            };
+          });
+          
+          setTransactions(formattedTransactions);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fallback to event querying if getRecentActions returns nothing
         const speedTrack = await getSpeedTrackReadOnly();
         
         // Fetch all events in parallel for better performance

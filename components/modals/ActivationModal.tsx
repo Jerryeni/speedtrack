@@ -18,17 +18,47 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
   const { account, refreshBalances } = useWeb3();
   const [isActivating, setIsActivating] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(0);
-  const [activationFee, setActivationFee] = useState("10");
+  const [activationLevels, setActivationLevels] = useState([
+    { level: 0, fee: "10", maxInvestment: "50", name: "Starter" },
+    { level: 1, fee: "50", maxInvestment: "250", name: "Bronze" },
+    { level: 2, fee: "100", maxInvestment: "500", name: "Silver" },
+    { level: 3, fee: "250", maxInvestment: "1250", name: "Gold" },
+    { level: 4, fee: "500", maxInvestment: "2500", name: "Platinum" },
+  ]);
+  const [isLoadingFees, setIsLoadingFees] = useState(true);
+
+  // Load activation fees from contract
+  useEffect(() => {
+    async function loadFees() {
+      try {
+        const { getActivationFees, getAllMaxInvestments } = await import('@/lib/web3/systemConfig');
+        const [fees, maxInvs] = await Promise.all([
+          getActivationFees(),
+          getAllMaxInvestments()
+        ]);
+        
+        const levels = fees.map((feeData, index) => ({
+          level: feeData.level,
+          fee: feeData.fee,
+          maxInvestment: maxInvs[index]?.maxInvestment || "0",
+          name: feeData.name
+        }));
+        
+        setActivationLevels(levels);
+      } catch (error) {
+        console.error("Error loading activation fees:", error);
+        // Keep default values
+      } finally {
+        setIsLoadingFees(false);
+      }
+    }
+    
+    if (isOpen) {
+      loadFees();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const activationLevels = [
-    { level: 0, fee: "10", maxInvestment: "50" },
-    { level: 1, fee: "50", maxInvestment: "250" },
-    { level: 2, fee: "100", maxInvestment: "500" },
-    { level: 3, fee: "250", maxInvestment: "1250" },
-    { level: 4, fee: "500", maxInvestment: "2500" },
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +152,6 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
                   key={level.level}
                   onClick={() => {
                     setSelectedLevel(level.level);
-                    setActivationFee(level.fee);
                   }}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     selectedLevel === level.level
@@ -193,7 +222,7 @@ export default function ActivationModal({ isOpen, onClose, onSuccess, isRequired
               ) : (
                 <>
                   <i className="fas fa-rocket mr-1.5"></i>
-                  <span>Activate ({activationFee} USDT)</span>
+                  <span>Activate ({activationLevels[selectedLevel]?.fee || '0'} USDT)</span>
                 </>
               )}
             </Button>
