@@ -130,12 +130,7 @@ export default function PoolInvestModal({
             </div>
           </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
-            <p className="text-xs text-blue-400">
-              <i className="fas fa-info-circle mr-2"></i>
-              You will receive 2X returns when the pool completes
-            </p>
-          </div>
+         
 
           <div className="flex space-x-3 pt-4">
             <Button

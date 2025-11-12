@@ -62,10 +62,12 @@ export default function ActivatePage() {
       
       await refreshBalances();
       
-      // Redirect to profile page to complete profile
-      setTimeout(() => {
-        router.push('/profile');
-      }, 2000);
+      // Wait for blockchain state to update
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Force a full page reload to ensure fresh state
+      console.log('→ Redirecting to profile page with fresh state');
+      window.location.href = '/profile';
     } catch (error: any) {
       console.error('Activation error:', error);
       const errorMessage = parseActivationError(error);

@@ -67,26 +67,26 @@ export default function ReferralPage() {
 
   return (
     <main className="min-h-screen pb-20">
-      <header className="relative z-50 px-4 py-6">
+      <header className="relative z-50 px-2 sm:px-4 py-3 sm:py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
             <button 
               onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
             >
-              <i className="fas fa-arrow-left text-neon-blue"></i>
+              <i className="fas fa-arrow-left text-neon-blue text-xs sm:text-sm"></i>
             </button>
-            <div>
-              <h1 className="text-xl font-orbitron font-bold text-neon-blue">Referral Center</h1>
-              <p className="text-xs text-gray-400">Build Your Racing Team</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-sm sm:text-xl font-orbitron font-bold text-neon-blue truncate">Referral Center</h1>
+              <p className="text-xs text-gray-400 hidden xs:block">Build Your Racing Team</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
-              <i className="fas fa-bell text-electric-purple text-sm"></i>
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
+              <i className="fas fa-bell text-electric-purple text-xs sm:text-sm"></i>
             </div>
-            <div className="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
-              <i className="fas fa-share-alt text-neon-blue text-sm"></i>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
+              <i className="fas fa-share-alt text-neon-blue text-xs sm:text-sm"></i>
             </div>
           </div>
         </div>
@@ -94,12 +94,12 @@ export default function ReferralPage() {
 
       {/* Wrong Network Warning */}
       {!isCorrectChain && (
-        <div className="px-4 mb-4">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <i className="fas fa-exclamation-triangle text-red-400 text-xl"></i>
-              <div>
-                <p className="text-sm font-medium text-red-400">Wrong Network</p>
+        <div className="px-2 sm:px-4 mb-3 sm:mb-4">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg sm:rounded-xl p-3 sm:p-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <i className="fas fa-exclamation-triangle text-red-400 text-base sm:text-xl flex-shrink-0"></i>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-red-400">Wrong Network</p>
                 <p className="text-xs text-gray-400 mt-1">
                   Please switch to the correct network to view your referral data
                 </p>
@@ -111,18 +111,18 @@ export default function ReferralPage() {
 
       <ReferralOverview stats={referralStats} isLoading={isLoading} />
       <ReferralLink 
-        referralLink={referralStats?.referralLink}
+        // referralLink={referralStats?.referralLink}
         shortLink={referralStats?.shortLink}
         referralCode={referralStats?.referralCode}
         isLoading={isLoading}
       />
       <CommissionStructure />
-      <ReferralTree levels={networkLevels} isLoading={isLoading} />
+      {/* <ReferralTree levels={networkLevels} isLoading={isLoading} /> */}
       <EarningsChart />
-      <RecentActivity />
-      <RewardsProgram />
+      {/* <RecentActivity /> */}
+      {/* <RewardsProgram /> */}
       <TeamStatistics stats={referralStats} isLoading={isLoading} />
-      <ReferralTools />
+      {/* <ReferralTools /> */}
       
       <BottomNav />
     </main>

@@ -94,9 +94,15 @@ export default function ProfilePage() {
           setShowProfileCompleteModal(false);
           router.push('/dashboard');
         }}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowProfileCompleteModal(false);
-          router.push('/dashboard');
+          
+          // Wait for blockchain state to update
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Force a full page reload to ensure fresh state
+          console.log('→ Redirecting to dashboard with fresh state');
+          window.location.href = '/dashboard';
         }}
       />
     </main>

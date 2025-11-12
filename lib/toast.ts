@@ -5,7 +5,8 @@ export function showToast(message: string, type: 'success' | 'error' | 'info' | 
 
   // Create toast element
   const toast = document.createElement('div');
-  toast.className = `toast-notification fixed top-4 right-4 z-[9999] px-6 py-4 rounded-xl shadow-2xl transform transition-all duration-300 translate-x-full max-w-md`;
+  // Responsive positioning: full width on mobile, fixed width on desktop
+  toast.className = `toast-notification fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[9999] px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl shadow-2xl transform transition-all duration-300 translate-x-full sm:max-w-md min-h-[48px]`;
   
   // Set colors and icons based on type
   let icon = '';
@@ -35,10 +36,10 @@ export function showToast(message: string, type: 'success' | 'error' | 'info' | 
   
   // Create content with icon and close button
   toast.innerHTML = `
-    <div class="flex items-start space-x-3">
-      <span class="text-xl flex-shrink-0 mt-0.5">${icon}</span>
+    <div class="flex items-start space-x-2 sm:space-x-3">
+      <span class="text-lg sm:text-xl flex-shrink-0 mt-0.5">${icon}</span>
       <span class="font-medium text-sm leading-relaxed flex-1">${message}</span>
-      <button class="toast-close flex-shrink-0 ml-2 text-white/80 hover:text-white transition-colors" aria-label="Close">
+      <button class="toast-close flex-shrink-0 ml-1 sm:ml-2 text-white/80 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2 sm:-mr-1" aria-label="Close">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>

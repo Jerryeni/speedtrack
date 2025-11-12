@@ -117,7 +117,10 @@ function HomeContent() {
         
         // IMPORTANT: Hide registration modal if registered
         // This ensures registered users NEVER see the registration modal
-        setShowRegisterModal(false);
+        if (showRegisterModal) {
+          console.log('🔒 Closing registration modal - user is already registered');
+          setShowRegisterModal(false);
+        }
         console.log('✓ User is registered - registration modal will NOT show');
         
         // If registered but not activated, and user came here wanting to activate
@@ -170,10 +173,15 @@ function HomeContent() {
       <RegistrationModal 
         isOpen={showRegisterModal}
         onClose={() => setShowRegisterModal(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           console.log('✓ Registration successful!');
-          console.log('→ Redirecting to activation page');
           setShowRegisterModal(false);
+          
+          // Wait a bit for blockchain state to update
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Force a full page reload to ensure fresh state
+          console.log('→ Redirecting to activation page with fresh state');
           window.location.href = '/activate';
         }}
       />

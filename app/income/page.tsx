@@ -11,26 +11,26 @@ export default function IncomePage() {
 
   return (
     <main className="min-h-screen pb-20">
-      <header className="relative z-50 px-4 py-6">
+      <header className="relative z-50 px-2 sm:px-4 py-3 sm:py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
             <button
               onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center flex-shrink-0"
             >
-              <i className="fas fa-arrow-left text-neon-blue"></i>
+              <i className="fas fa-arrow-left text-neon-blue text-xs sm:text-sm"></i>
             </button>
-            <div>
-              <h1 className="text-xl font-orbitron font-bold text-neon-blue">Income Details</h1>
-              <p className="text-xs text-gray-400">Comprehensive Earnings Overview</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-sm sm:text-xl font-orbitron font-bold text-neon-blue truncate">Income Details</h1>
+              <p className="text-xs text-gray-400 hidden xs:block">Comprehensive Earnings Overview</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
-              <i className="fas fa-download text-electric-purple text-sm"></i>
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
+              <i className="fas fa-download text-electric-purple text-xs sm:text-sm"></i>
             </div>
-            <div className="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
-              <i className="fas fa-share text-neon-blue text-sm"></i>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
+              <i className="fas fa-share text-neon-blue text-xs sm:text-sm"></i>
             </div>
           </div>
         </div>

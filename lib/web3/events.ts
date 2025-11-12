@@ -280,9 +280,9 @@ export async function getSTTokensReceivedEvents(fromBlock: number = 0): Promise<
  */
 export async function calculatePlatformStatistics(fromBlock: number = 0): Promise<PlatformStatistics> {
   try {
-    console.log('Fetching platform statistics from events...');
+    const speedTrack = await getSpeedTrackReadOnly();
     
-    // Fetch all events in parallel with individual error handling
+    // Fetch all events in parallel for maximum performance
     const [
       registrations,
       activations,
@@ -292,13 +292,13 @@ export async function calculatePlatformStatistics(fromBlock: number = 0): Promis
       capitalReturns,
       stTokens
     ] = await Promise.all([
-      getUserRegistrationEvents(fromBlock).catch(() => []),
-      getActivationEvents(fromBlock).catch(() => []),
-      getInvestmentEvents(fromBlock).catch(() => []),
-      getROIClaimedEvents(fromBlock).catch(() => []),
-      getLevelIncomeEvents(fromBlock).catch(() => []),
-      getCapitalReturnedEvents(fromBlock).catch(() => []),
-      getSTTokensReceivedEvents(fromBlock).catch(() => [])
+      speedTrack.queryFilter(speedTrack.filters.SponsorRegistered(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.AccountActivated(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.InvestmentMade(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.ROIClaimed(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.LevelIncomeReceived(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.CapitalReturned(), fromBlock).catch(() => []),
+      speedTrack.queryFilter(speedTrack.filters.STTokensReceived(), fromBlock).catch(() => [])
     ]);
 
     // Calculate totals with safe BigInt aggregation

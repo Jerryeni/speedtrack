@@ -49,11 +49,17 @@ export function useUserFlow() {
       try {
         setFlowState(prev => ({ ...prev, isLoading: true }));
 
+        console.log('🔍 Checking user flow for:', account);
+
         // Step 2: Check registration (using getUserId - most reliable)
         const userId = await getUserId(account);
-        const isRegistered = userId !== '0' && parseInt(userId) > 0;
+        const userIdNum = parseInt(userId);
+        const isRegistered = userId !== '0' && userIdNum > 0;
+        
+        console.log('📋 Registration check:', { userId, userIdNum, isRegistered });
         
         if (!isRegistered) {
+          console.log('❌ User not registered, stopping flow check');
           setFlowState({
             isConnected: true,
             isRegistered: false,
@@ -68,8 +74,10 @@ export function useUserFlow() {
 
         // Step 3: Check activation
         const isActivated = await checkAccountActivation(account);
+        console.log('🔓 Activation check:', { isActivated });
         
         if (!isActivated) {
+          console.log('❌ User not activated, stopping flow check');
           setFlowState({
             isConnected: true,
             isRegistered: true,
@@ -85,8 +93,10 @@ export function useUserFlow() {
         // Step 4: Check profile completion
         const userDetails = await getUserDetails(account);
         const isProfileComplete = userDetails.profileCompleted === true;
+        console.log('👤 Profile check:', { isProfileComplete, name: userDetails.name });
         
         if (!isProfileComplete) {
+          console.log('❌ Profile not complete, stopping flow check');
           setFlowState({
             isConnected: true,
             isRegistered: true,
@@ -100,6 +110,7 @@ export function useUserFlow() {
         }
 
         // All steps complete - user can access dashboard
+        console.log('✅ All flow checks passed! User can access dashboard');
         setFlowState({
           isConnected: true,
           isRegistered: true,
@@ -111,8 +122,17 @@ export function useUserFlow() {
         });
 
       } catch (error) {
-        console.error('Error checking user flow:', error);
-        setFlowState(prev => ({ ...prev, isLoading: false }));
+        console.error('❌ Error checking user flow:', error);
+        // On error, assume user needs to start from registration
+        setFlowState({
+          isConnected: true,
+          isRegistered: false,
+          isActivated: false,
+          isProfileComplete: false,
+          isLoading: false,
+          currentStep: 'register',
+          canAccessDashboard: false
+        });
       }
     }
 
@@ -198,10 +218,87 @@ export function useUserFlow() {
     }
   };
 
+  /**
+   * Manually refresh the flow state (useful after completing a step)
+   */
+  const refreshFlow = async () => {
+    if (!account || !isConnected || !isCorrectChain) return;
+    
+    setFlowState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      console.log('🔄 Manually refreshing user flow...');
+      
+      const userId = await getUserId(account);
+      const userIdNum = parseInt(userId);
+      const isRegistered = userId !== '0' && userIdNum > 0;
+      
+      if (!isRegistered) {
+        setFlowState({
+          isConnected: true,
+          isRegistered: false,
+          isActivated: false,
+          isProfileComplete: false,
+          isLoading: false,
+          currentStep: 'register',
+          canAccessDashboard: false
+        });
+        return;
+      }
+
+      const isActivated = await checkAccountActivation(account);
+      
+      if (!isActivated) {
+        setFlowState({
+          isConnected: true,
+          isRegistered: true,
+          isActivated: false,
+          isProfileComplete: false,
+          isLoading: false,
+          currentStep: 'activate',
+          canAccessDashboard: false
+        });
+        return;
+      }
+
+      const userDetails = await getUserDetails(account);
+      const isProfileComplete = userDetails.profileCompleted === true;
+      
+      if (!isProfileComplete) {
+        setFlowState({
+          isConnected: true,
+          isRegistered: true,
+          isActivated: true,
+          isProfileComplete: false,
+          isLoading: false,
+          currentStep: 'profile',
+          canAccessDashboard: false
+        });
+        return;
+      }
+
+      setFlowState({
+        isConnected: true,
+        isRegistered: true,
+        isActivated: true,
+        isProfileComplete: true,
+        isLoading: false,
+        currentStep: 'complete',
+        canAccessDashboard: true
+      });
+      
+      console.log('✅ Flow refresh complete');
+    } catch (error) {
+      console.error('❌ Error refreshing flow:', error);
+      setFlowState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   return {
     ...flowState,
     enforceFlow,
     getStepMessage,
-    getNextAction
+    getNextAction,
+    refreshFlow
   };
 }

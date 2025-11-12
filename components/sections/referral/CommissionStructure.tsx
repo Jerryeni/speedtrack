@@ -23,7 +23,7 @@ export default function CommissionStructure() {
           getNetworkLevels(account)
         ]);
 
-        const levelData = percentages.slice(0, 3).map((percentage, index) => {
+        const levelData = percentages.slice(0, 10).map((percentage, index) => {
           const networkLevel = networkLevels.find(l => l.level === index + 1);
           const colors = ['neon-blue', 'electric-purple', 'green-400'];
           
@@ -52,12 +52,12 @@ export default function CommissionStructure() {
 
   if (isLoading) {
     return (
-      <section className="px-4 mb-6">
-        <h3 className="text-lg font-orbitron font-bold mb-4">Commission Structure</h3>
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 border border-gray-700">
+      <section className="px-2 sm:px-4 mb-4 sm:mb-6">
+        <h3 className="text-sm sm:text-lg font-orbitron font-bold mb-3 sm:mb-4">Commission Structure</h3>
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-700">
           <div className="text-center text-gray-400">
-            <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
-            <p>Loading commission structure...</p>
+            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl mb-2"></i>
+            <p className="text-sm sm:text-base">Loading commission structure...</p>
           </div>
         </div>
       </section>
@@ -65,51 +65,51 @@ export default function CommissionStructure() {
   }
 
   return (
-    <section className="px-4 mb-6">
-      <h3 className="text-lg font-orbitron font-bold mb-4">Commission Structure</h3>
-      <div className="space-y-3">
+    <section className="px-2 sm:px-4 mb-4 sm:mb-6">
+      <h3 className="text-sm sm:text-lg font-orbitron font-bold mb-3 sm:mb-4">Commission Structure</h3>
+      <div className="space-y-2 sm:space-y-3">
         {levels.map((level) => (
           <div
             key={level.level}
-            className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 border border-gray-700"
+            className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-700"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full bg-${level.color}/20 flex items-center justify-center animate-[levelPulse_2s_ease-in-out_infinite]`}>
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-${level.color}/20 flex items-center justify-center animate-[levelPulse_2s_ease-in-out_infinite] flex-shrink-0`}>
                   <span className={`text-xs font-bold text-${level.color}`}>L{level.level}</span>
                 </div>
-                <div>
-                  <p className="font-semibold">{level.name}</p>
-                  <p className="text-xs text-gray-400">{level.description}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-xs sm:text-sm truncate">{level.name}</p>
+                  <p className="text-xs text-gray-400 hidden sm:block">{level.description}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={`text-lg font-bold text-${level.color}`}>{level.commission}</p>
-                <p className="text-xs text-gray-400">Commission</p>
+              <div className="text-right flex-shrink-0 ml-2">
+                <p className={`text-sm sm:text-lg font-bold text-${level.color}`}>{level.commission}</p>
+                <p className="text-xs text-gray-400 hidden sm:block">Commission</p>
               </div>
             </div>
-            <div className="bg-gray-800 rounded-lg p-3">
+            <div className="bg-gray-800 rounded-lg p-2 sm:p-3">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">Active Members: {level.activeMembers}</span>
+                <span className="text-gray-400 truncate">Active: {level.activeMembers}</span>
                 <span className={`text-${level.color} font-semibold`}>{level.earned} Earned</span>
               </div>
               <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div
-                  className={`h-full bg-${level.color} rounded-full`}
+                  className={`h-full bg-${level.color} rounded-full transition-all duration-500`}
                   style={{ width: `${level.progress}%` }}
                 ></div>
               </div>
             </div>
           </div>
         ))}
-
+{/* 
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-3 border border-gray-700/50">
           <div className="flex items-center justify-center space-x-2 text-gray-400">
             <i className="fas fa-ellipsis-h"></i>
             <span className="text-sm">Levels 4-10 available</span>
             <button className="text-neon-blue text-sm font-medium">View All</button>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

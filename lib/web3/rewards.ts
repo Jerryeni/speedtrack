@@ -127,26 +127,45 @@ export interface RewardSummary {
     stRewarded: string;
 }
 
+// Cache for reward summary
+const rewardSummaryCache = new Map<string, { data: RewardSummary; timestamp: number }>();
+const REWARD_CACHE_DURATION = 20000; // 20 seconds
+
 export async function getRewardSummary(userAddress: string): Promise<RewardSummary> {
+    // Check cache
+    const cached = rewardSummaryCache.get(userAddress.toLowerCase());
+    if (cached && Date.now() - cached.timestamp < REWARD_CACHE_DURATION) {
+        return cached.data;
+    }
+    
     try {
+        const speedTrack = await getSpeedTrackReadOnly();
+        
+        // Batch all calls in parallel for maximum performance
         const [claimable, pending, levelIncome, capitalReturned, stRewarded, roiTotals] = await Promise.all([
-            getClaimableROI(userAddress),
-            getPendingDailyROI(userAddress),
-            getTotalLevelIncome(userAddress),
-            getTotalCapitalReturned(userAddress),
-            getTotalSTRewarded(userAddress),
-            getROITotals(userAddress)
+            speedTrack.getClaimableROI(userAddress).catch(() => BigInt(0)),
+            speedTrack.getPendingDailyROI(userAddress).catch(() => BigInt(0)),
+            speedTrack.getTotalLevelIncome(userAddress).catch(() => BigInt(0)),
+            speedTrack.getTotalCapitalReturned(userAddress).catch(() => BigInt(0)),
+            speedTrack.getTotalSTRewarded(userAddress).catch(() => BigInt(0)),
+            speedTrack.getROITotals(userAddress).catch(() => ({ credited: BigInt(0), claimed: BigInt(0) }))
         ]);
 
-        return {
-            dailyReward: pending,
-            totalEarned: roiTotals.credited,
-            availableToClaim: claimable,
-            levelIncome,
-            capitalReturned,
-            stRewarded
+        const result = {
+            dailyReward: safeFormatUnits(pending, 6),
+            totalEarned: safeFormatUnits(roiTotals.credited, 6),
+            availableToClaim: safeFormatUnits(claimable, 6),
+            levelIncome: safeFormatUnits(levelIncome, 6),
+            capitalReturned: safeFormatUnits(capitalReturned, 6),
+            stRewarded: safeFormatUnits(stRewarded, 6)
         };
+        
+        // Cache result
+        rewardSummaryCache.set(userAddress.toLowerCase(), { data: result, timestamp: Date.now() });
+        
+        return result;
     } catch (error) {
+        console.error('Error fetching reward summary:', error);
         return {
             dailyReward: '0',
             totalEarned: '0',
@@ -155,5 +174,15 @@ export async function getRewardSummary(userAddress: string): Promise<RewardSumma
             capitalReturned: '0',
             stRewarded: '0'
         };
+    }
+}
+
+// Helper function for safe formatting
+function safeFormatUnits(value: any, decimals: number): string {
+    try {
+        if (!value || value === null || value === undefined) return '0';
+        return ethers.formatUnits(value, decimals);
+    } catch {
+        return '0';
     }
 }

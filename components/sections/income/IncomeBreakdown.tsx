@@ -72,7 +72,7 @@ export default function IncomeBreakdown({ filterType }: IncomeBreakdownProps) {
       badgeText: "Referrals",
     },
     {
-      title: "Capital Return",
+      title: "Profit Limit",
       description: "200% capital return on investments",
       amount: `$${capitalReturned.toFixed(2)}`,
       change: "200% Target",
@@ -90,25 +90,25 @@ export default function IncomeBreakdown({ filterType }: IncomeBreakdownProps) {
       badgeIcon: "fa-chart-bar",
       badgeText: "$93.8K Volume",
     },
-    {
-      title: "Daily Rewards",
-      description: "Daily bonus earnings",
-      amount: "$1,329.70",
-      change: "+12.1%",
-      icon: "fa-gift",
-      color: "yellow-400",
-      stats: [
-        { label: "Streak", value: "23" },
-        { label: "Daily Avg", value: "$57.8" },
-        { label: "Next Reward", value: "18h 42m" },
-      ],
-      progressLabel: "Reward Multiplier",
-      progressValue: "2.3x Active",
-      progressPercent: 66,
-      actionLabel: "View Reward Calendar",
-      badgeIcon: "fa-fire",
-      badgeText: "23 Day Streak",
-    },
+    // {
+    //   title: "Daily Rewards",
+    //   description: "Daily bonus earnings",
+    //   amount: "$1,329.70",
+    //   change: "+12.1%",
+    //   icon: "fa-gift",
+    //   color: "yellow-400",
+    //   stats: [
+    //     { label: "Streak", value: "23" },
+    //     { label: "Daily Avg", value: "$57.8" },
+    //     { label: "Next Reward", value: "18h 42m" },
+    //   ],
+    //   progressLabel: "Reward Multiplier",
+    //   progressValue: "2.3x Active",
+    //   progressPercent: 66,
+    //   actionLabel: "View Reward Calendar",
+    //   badgeIcon: "fa-fire",
+    //   badgeText: "23 Day Streak",
+    // },
   ];
 
   const filteredTypes = filterType === "all" 
@@ -116,8 +116,8 @@ export default function IncomeBreakdown({ filterType }: IncomeBreakdownProps) {
     : incomeTypes.filter(type => type.title.toLowerCase().includes(filterType));
 
   return (
-    <section className="px-4 mb-6">
-      <h3 className="text-lg font-orbitron font-bold mb-4">Income Breakdown</h3>
+    <section className="px-2 sm:px-4 mb-4 sm:mb-6">
+      <h3 className="text-sm sm:text-lg font-orbitron font-bold mb-3 sm:mb-4">Income Breakdown</h3>
       {filteredTypes.map((type, index) => (
         <IncomeCard key={index} {...type} />
       ))}

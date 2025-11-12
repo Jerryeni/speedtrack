@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useWeb3 } from "@/lib/web3/Web3Context";
+import UpgradeButton from "@/components/layout/UpgradeButton";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -90,7 +91,7 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
         {account && (
           <div className="p-4 border-b border-gray-700">
             <p className="text-xs text-gray-400 mb-2">Your Balance</p>
-            <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3">
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3 mb-3">
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 rounded-full bg-neon-blue/20 flex items-center justify-center">
                   <i className="fas fa-coins text-neon-blue text-xs"></i>
@@ -106,6 +107,9 @@ export default function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 })()}
               </span>
             </div>
+            
+            {/* Upgrade Button */}
+            <UpgradeButton />
           </div>
         )}
 

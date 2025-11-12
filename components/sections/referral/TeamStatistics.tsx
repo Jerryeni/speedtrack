@@ -17,12 +17,12 @@ export default function TeamStatistics({ stats, isLoading }: TeamStatisticsProps
 
   if (isLoading) {
     return (
-      <section className="px-4 mb-6">
-        <h3 className="text-lg font-orbitron font-bold mb-4">Team Statistics</h3>
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 border border-gray-700">
+      <section className="px-2 sm:px-4 mb-4 sm:mb-6">
+        <h3 className="text-sm sm:text-lg font-orbitron font-bold mb-3 sm:mb-4">Team Statistics</h3>
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700">
           <div className="text-center text-gray-400">
-            <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
-            <p>Loading statistics...</p>
+            <i className="fas fa-spinner fa-spin text-xl sm:text-2xl mb-2"></i>
+            <p className="text-sm sm:text-base">Loading statistics...</p>
           </div>
         </div>
       </section>
@@ -30,35 +30,35 @@ export default function TeamStatistics({ stats, isLoading }: TeamStatisticsProps
   }
 
   return (
-    <section className="px-4 mb-6">
-      <h3 className="text-lg font-orbitron font-bold mb-4">Team Statistics</h3>
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700">
-        <div className="grid grid-cols-2 gap-4 mb-4">
+    <section className="px-2 sm:px-4 mb-4 sm:mb-6">
+      <h3 className="text-sm sm:text-lg font-orbitron font-bold mb-3 sm:mb-4">Team Statistics</h3>
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-gray-700">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
           {displayStats.map((stat, index) => (
-            <div key={index} className="bg-gray-800/50 rounded-xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <i className={`fas ${stat.icon} text-${stat.color}`}></i>
+            <div key={index} className="bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <i className={`fas ${stat.icon} text-${stat.color} text-xs sm:text-sm`}></i>
                 <span className={`text-xs text-${stat.changeColor}`}>{stat.change}</span>
               </div>
-              <p className={`text-xl font-bold text-${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-gray-400">{stat.label}</p>
+              <p className={`text-base sm:text-xl font-bold text-${stat.color} truncate`}>{stat.value}</p>
+              <p className="text-xs text-gray-400 truncate">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-3">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-sm">Team Growth Trend</h4>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-green-400"></div>
+        <div className="bg-gray-800 rounded-lg sm:rounded-xl p-2 sm:p-3">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <h4 className="font-semibold text-xs sm:text-sm">Team Growth Trend</h4>
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400"></div>
               <span className="text-xs text-green-400">Growing</span>
             </div>
           </div>
-          <div className="h-24 flex items-end space-x-1">
+          <div className="h-16 sm:h-24 flex items-end space-x-0.5 sm:space-x-1">
             {[10, 15, 12, 20, 18, 25, 30, 35, 40, 45].map((height, index) => (
               <div
                 key={index}
-                className="flex-1 bg-neon-blue rounded-t"
+                className="flex-1 bg-neon-blue rounded-t transition-all duration-300"
                 style={{ height: `${height}%` }}
               ></div>
             ))}

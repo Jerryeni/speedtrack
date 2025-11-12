@@ -189,7 +189,7 @@ function DashboardContent() {
               </div>
             </div>
             <div className="text-2xl font-bold text-green-400 mb-1">
-              {parseFloat(rewardData?.totalEarned || '0').toFixed(4)} USDT
+              {parseFloat(rewardData?.totalEarned || '0').toFixed(4)} STT
             </div>
             <div className="text-xs text-gray-400">Total Rewards</div>
             <div className="mt-3 flex items-center space-x-2">
@@ -204,7 +204,7 @@ function DashboardContent() {
             layout="box"
             icon="fa-clock"
             color="text-yellow-400"
-            value="0.5%"
+            value="0.3%"
             label="Reward Rate"
             badge="Daily"
             badgeColor="bg-yellow-500/20 text-yellow-400"
@@ -265,8 +265,6 @@ function DashboardContent() {
           </div>
         </section>
       )}
-
-      <ReferralProgram />
 
       {isConnected && isCorrectChain && isActivated && (
         <section className="px-4 mb-8">

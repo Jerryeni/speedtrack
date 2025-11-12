@@ -12,6 +12,10 @@ export interface PoolInfo {
   progress: number;
 }
 
+// Cache for pool info
+const poolInfoCache = new Map<number, { data: PoolInfo; timestamp: number }>();
+const POOL_CACHE_DURATION = 15000; // 15 seconds
+
 // Helper function to safely format BigInt values
 function safeFormatUnits(value: any, decimals: number): string {
   try {
@@ -31,10 +35,16 @@ function safePercentage(numerator: number, denominator: number): number {
   const result = (numerator / denominator) * 100;
   
   if (!isFinite(result) || isNaN(result)) return 0;
-  return Math.min(Math.max(result, 0), 100); // Clamp between 0 and 100
+  return Math.min(Math.max(result, 0), 100);
 }
 
 export async function getPoolInfo(poolIndex: number): Promise<PoolInfo> {
+  // Check cache first
+  const cached = poolInfoCache.get(poolIndex);
+  if (cached && Date.now() - cached.timestamp < POOL_CACHE_DURATION) {
+    return cached.data;
+  }
+  
   try {
     const speedTrack = await getSpeedTrackReadOnly();
     const poolData = await speedTrack.getPoolInfo(poolIndex);
@@ -49,7 +59,7 @@ export async function getPoolInfo(poolIndex: number): Promise<PoolInfo> {
     const filledNum = parseFloat(currentFilled);
     const progress = safePercentage(filledNum, sizeNum);
     
-    return {
+    const result = {
       poolIndex,
       size,
       currentFilled,
@@ -59,6 +69,11 @@ export async function getPoolInfo(poolIndex: number): Promise<PoolInfo> {
       queueLength: Number(poolData.queueLength || 0),
       progress
     };
+    
+    // Cache the result
+    poolInfoCache.set(poolIndex, { data: result, timestamp: Date.now() });
+    
+    return result;
   } catch (error: any) {
     console.error(`Error fetching pool ${poolIndex} info:`, error?.message || error);
     

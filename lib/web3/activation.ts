@@ -118,27 +118,39 @@ export async function completeProfile(data: ActivationData): Promise<ethers.Cont
 
 export async function getUserDetails(address: string) {
   try {
+    console.log('📞 getUserDetails called for:', address);
     const speedTrack = await getSpeedTrackReadOnly();
     
     // First check if user is registered by checking their ID
     const userId = await speedTrack.getUserId(address);
     const userIdNum = Number(userId);
+    console.log('getUserId returned:', userIdNum);
+    
     if (userIdNum === 0) {
+      console.log('❌ User not registered (userId = 0)');
       throw new Error('User not registered');
     }
+    
+    console.log('✅ User is registered (userId =', userIdNum, ')');
     
     // User is registered, get their info
     // getUserInfo returns: (name, email, countryCode, mobileNumber, activationLevel, referrer, 
     //                       referrerType, isRootLeader, profileCompleted, investedAmount, 
     //                       capitalReturned, virtualROIBalance, rewardPoints, uid)
     const userInfo = await speedTrack.getUserInfo(address);
+    console.log('getUserInfo returned:', {
+      uid: userInfo.uid.toString(),
+      activationLevel: userInfo.activationLevel.toString(),
+      profileCompleted: userInfo.profileCompleted,
+      name: userInfo.name
+    });
     
     // Safe formatting with validation
     const investedAmount = userInfo.investedAmount ? ethers.formatUnits(userInfo.investedAmount, 6) : '0';
     const capitalReturned = userInfo.capitalReturned ? ethers.formatUnits(userInfo.capitalReturned, 6) : '0';
     const virtualROIBalance = userInfo.virtualROIBalance ? ethers.formatUnits(userInfo.virtualROIBalance, 6) : '0';
     
-    return {
+    const result = {
       name: userInfo.name || '',
       email: userInfo.email || '',
       countryCode: userInfo.countryCode || '',
@@ -155,7 +167,11 @@ export async function getUserDetails(address: string) {
       uid: userInfo.uid ? userInfo.uid.toString() : userId.toString(),
       isRegistered: true
     };
+    
+    console.log('✅ getUserDetails returning:', result);
+    return result;
   } catch (error: any) {
+    console.error('❌ Error in getUserDetails:', error);
     // Check if it's a "not registered" error
     if (error.message === 'User not registered') {
       throw error;
