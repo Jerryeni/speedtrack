@@ -51,13 +51,13 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         const now = Math.floor(Date.now() / 1000);
 
         // Process investment events
-        investEvents.forEach(event => {
+        investEvents.forEach((event, index) => {
           const eventLog = event as ethers.EventLog;
           allTransactions.push({
             type: 'investment',
             title: 'Pool Investment',
             amount: ethers.formatUnits(eventLog.args?.amount || 0, 6),
-            timestamp: now - (investEvents.length - investEvents.indexOf(event)) * 3600,
+            timestamp: now - (investEvents.length - index) * 3600,
             icon: 'fa-arrow-up',
             color: 'text-blue-400',
             poolIndex: Number(eventLog.args?.poolIndex || 0),
@@ -66,13 +66,13 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         });
 
         // Process ROI events
-        roiEvents.forEach(event => {
+        roiEvents.forEach((event, index) => {
           const eventLog = event as ethers.EventLog;
           allTransactions.push({
             type: 'roi_claim',
             title: 'ROI Claimed',
             amount: ethers.formatUnits(eventLog.args?.amount || 0, 6),
-            timestamp: now - (roiEvents.length - roiEvents.indexOf(event)) * 3600,
+            timestamp: now - (roiEvents.length - index) * 3600,
             icon: 'fa-coins',
             color: 'text-green-400',
             blockNumber: event.blockNumber
@@ -80,13 +80,13 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         });
 
         // Process level income events
-        levelIncomeEvents.forEach(event => {
+        levelIncomeEvents.forEach((event, index) => {
           const eventLog = event as ethers.EventLog;
           allTransactions.push({
             type: 'level_income',
             title: 'Level Income',
             amount: ethers.formatUnits(eventLog.args?.amount || 0, 6),
-            timestamp: now - (levelIncomeEvents.length - levelIncomeEvents.indexOf(event)) * 3600,
+            timestamp: now - (levelIncomeEvents.length - index) * 3600,
             icon: 'fa-users',
             color: 'text-purple-400',
             fromUser: eventLog.args?.fromUser,
@@ -95,13 +95,13 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         });
 
         // Process capital events
-        capitalEvents.forEach(event => {
+        capitalEvents.forEach((event, index) => {
           const eventLog = event as ethers.EventLog;
           allTransactions.push({
             type: 'capital_return',
             title: 'Capital Returned',
             amount: ethers.formatUnits(eventLog.args?.amount || 0, 6),
-            timestamp: now - (capitalEvents.length - capitalEvents.indexOf(event)) * 3600,
+            timestamp: now - (capitalEvents.length - index) * 3600,
             icon: 'fa-undo',
             color: 'text-yellow-400',
             poolIndex: Number(eventLog.args?.poolIndex || 0),
@@ -110,13 +110,13 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         });
 
         // Process ST token events
-        stEvents.forEach(event => {
+        stEvents.forEach((event, index) => {
           const eventLog = event as ethers.EventLog;
           allTransactions.push({
             type: 'st_reward',
             title: 'ST Token Reward',
             amount: ethers.formatUnits(eventLog.args?.usdtAmount || 0, 6),
-            timestamp: now - (stEvents.length - stEvents.indexOf(event)) * 3600,
+            timestamp: now - (stEvents.length - index) * 3600,
             icon: 'fa-gift',
             color: 'text-pink-400',
             poolIndex: Number(eventLog.args?.poolIndex || 0),
@@ -125,12 +125,12 @@ export default function RecentTransactions({ filterDate }: RecentTransactionsPro
         });
 
         // Process activation events
-        activationEvents.forEach(event => {
+        activationEvents.forEach((event, index) => {
           allTransactions.push({
             type: 'activation',
             title: 'Account Activated',
             amount: '0',
-            timestamp: now - (activationEvents.length - activationEvents.indexOf(event)) * 3600,
+            timestamp: now - (activationEvents.length - index) * 3600,
             icon: 'fa-check-circle',
             color: 'text-green-400',
             blockNumber: event.blockNumber

@@ -21,8 +21,13 @@ export async function checkAccountActivation(address: string): Promise<boolean> 
       console.log('Activation level:', activationLevel);
       console.log(isActivated ? '✅ User IS activated' : '❌ User is NOT activated');
       return isActivated;
-    } catch (error) {
-      console.log('⚠️ getUserInfo failed, trying getActivationStatus...');
+    } catch (error: any) {
+      console.log('⚠️ getUserInfo failed:', error.message);
+      
+      // If it's a network error, throw it so caller can retry
+      if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
+        throw new Error('Network error - please retry');
+      }
     }
     
     // Fallback method: Try getActivationStatus if it exists
@@ -30,14 +35,20 @@ export async function checkAccountActivation(address: string): Promise<boolean> 
       const isActivated = await speedTrack.getActivationStatus(address);
       console.log('getActivationStatus returned:', isActivated);
       return isActivated;
-    } catch (error) {
-      console.log('⚠️ getActivationStatus also failed');
+    } catch (error: any) {
+      console.log('⚠️ getActivationStatus also failed:', error.message);
     }
     
     console.log('❌ Could not determine activation status, assuming NOT activated');
     return false;
   } catch (error: any) {
     console.error('❌ Error checking activation:', error.message);
+    
+    // If it's a network error, throw it so caller can retry
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
+      throw error;
+    }
+    
     return false;
   }
 }
@@ -172,10 +183,17 @@ export async function getUserDetails(address: string) {
     return result;
   } catch (error: any) {
     console.error('❌ Error in getUserDetails:', error);
+    
+    // If it's a network error, throw it so caller can retry
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
+      throw new Error('Network error - please retry');
+    }
+    
     // Check if it's a "not registered" error
     if (error.message === 'User not registered') {
       throw error;
     }
+    
     console.error('Error fetching user details:', error);
     throw new Error('Failed to fetch user details');
   }
@@ -197,7 +215,12 @@ export async function getUserId(address: string): Promise<string> {
     console.error('Error message:', error.message);
     console.error('Error code:', error.code);
     
-    // Return '0' but log the error details
+    // If it's a network error, throw it so caller can retry
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || error.message?.includes('network')) {
+      throw new Error('Network error - please retry');
+    }
+    
+    // For other errors, return '0' (user not registered)
     return '0';
   }
 }

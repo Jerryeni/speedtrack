@@ -302,52 +302,64 @@ export async function calculatePlatformStatistics(fromBlock: number = 0): Promis
     ]);
 
     // Calculate totals with safe BigInt aggregation
-    const totalUsers = new Set(registrations.map(e => e.user.toLowerCase())).size;
+    // Cast events to EventLog to access args
+    const registrationEvents = registrations.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    const investmentEvents = investments.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    const roiClaimEvents = roiClaims.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    const levelIncomeEvents = levelIncomes.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    const capitalReturnEvents = capitalReturns.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    const stTokenEvents = stTokens.filter((e): e is ethers.EventLog => 'args' in e) as ethers.EventLog[];
+    
+    const totalUsers = new Set(
+      registrationEvents.map(e => (e.args[0] as string).toLowerCase())
+    ).size;
     const totalActivations = activations.length;
     
     // Safe BigInt aggregation - sum first, then format
-    const totalInvested = investments.reduce((sum, e) => {
+    const totalInvested = investmentEvents.reduce((sum, e) => {
       try {
-        return sum + (e.amount || BigInt(0));
+        return sum + (e.args[2] as bigint || BigInt(0));
       } catch {
         return sum;
       }
     }, BigInt(0));
     
-    const totalROIPaid = roiClaims.reduce((sum, e) => {
+    const totalROIPaid = roiClaimEvents.reduce((sum, e) => {
       try {
-        return sum + (e.amount || BigInt(0));
+        return sum + (e.args[1] as bigint || BigInt(0));
       } catch {
         return sum;
       }
     }, BigInt(0));
     
-    const totalLevelIncome = levelIncomes.reduce((sum, e) => {
+    const totalLevelIncome = levelIncomeEvents.reduce((sum, e) => {
       try {
-        return sum + (e.amount || BigInt(0));
+        return sum + (e.args[2] as bigint || BigInt(0));
       } catch {
         return sum;
       }
     }, BigInt(0));
     
-    const totalCapitalReturned = capitalReturns.reduce((sum, e) => {
+    const totalCapitalReturned = capitalReturnEvents.reduce((sum, e) => {
       try {
-        return sum + (e.amount || BigInt(0));
+        return sum + (e.args[1] as bigint || BigInt(0));
       } catch {
         return sum;
       }
     }, BigInt(0));
     
-    const totalSTDistributed = stTokens.reduce((sum, e) => {
+    const totalSTDistributed = stTokenEvents.reduce((sum, e) => {
       try {
-        return sum + (e.usdtAmount || BigInt(0));
+        return sum + (e.args[1] as bigint || BigInt(0));
       } catch {
         return sum;
       }
     }, BigInt(0));
     
     // Get unique pools
-    const activePools = new Set(investments.map(e => e.poolIndex.toString())).size;
+    const activePools = new Set(
+      investmentEvents.map(e => (e.args[1] as bigint).toString())
+    ).size;
 
     // Format all amounts with proper decimal places (USDT = 6 decimals)
     return {

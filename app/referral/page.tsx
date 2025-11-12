@@ -81,14 +81,7 @@ export default function ReferralPage() {
               <p className="text-xs text-gray-400 hidden xs:block">Build Your Racing Team</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-electric-purple/20 flex items-center justify-center">
-              <i className="fas fa-bell text-electric-purple text-xs sm:text-sm"></i>
-            </div>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neon-blue/20 flex items-center justify-center">
-              <i className="fas fa-share-alt text-neon-blue text-xs sm:text-sm"></i>
-            </div>
-          </div>
+          
         </div>
       </header>
 
@@ -111,7 +104,7 @@ export default function ReferralPage() {
 
       <ReferralOverview stats={referralStats} isLoading={isLoading} />
       <ReferralLink 
-        // referralLink={referralStats?.referralLink}
+        referralLink={referralStats?.referralLink}
         shortLink={referralStats?.shortLink}
         referralCode={referralStats?.referralCode}
         isLoading={isLoading}

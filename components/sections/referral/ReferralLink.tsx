@@ -124,7 +124,7 @@ export default function ReferralLink({ referralLink, shortLink, referralCode, is
         <div className="bg-gray-800 rounded-xl p-3 mb-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-gray-400">Full Link</p>
+              <p className="text-xs text-gray-400">QRCODE</p>
               <button
                 onClick={() => referralLink && setShowQRModal(true)}
                 disabled={isLoading || !referralLink}
@@ -133,11 +133,11 @@ export default function ReferralLink({ referralLink, shortLink, referralCode, is
                 <i className="fas fa-qrcode text-green-400"></i>
               </button>
             </div>
-            <div className="bg-gray-900 rounded-lg p-2 overflow-x-auto">
+            {/* <div className="bg-gray-900 rounded-lg p-2 overflow-x-auto">
               <p className="font-mono text-xs text-white whitespace-nowrap">
                 {isLoading ? '...' : referralLink || 'Connect wallet to get your link'}
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 

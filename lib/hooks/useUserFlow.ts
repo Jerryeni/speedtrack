@@ -29,6 +29,8 @@ export function useUserFlow() {
     currentStep: 'connect',
     canAccessDashboard: false
   });
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastSuccessfulCheck, setLastSuccessfulCheck] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkUserFlow() {
@@ -43,6 +45,14 @@ export function useUserFlow() {
           currentStep: 'connect',
           canAccessDashboard: false
         });
+        setLastSuccessfulCheck(null);
+        return;
+      }
+
+      // Use cached result if available and account hasn't changed
+      const cacheKey = `flow_${account}`;
+      if (lastSuccessfulCheck === cacheKey && retryCount === 0) {
+        console.log('✅ Using cached flow state for:', account);
         return;
       }
 
@@ -120,24 +130,42 @@ export function useUserFlow() {
           currentStep: 'complete',
           canAccessDashboard: true
         });
+        
+        // Cache successful check
+        setLastSuccessfulCheck(`flow_${account}`);
+        setRetryCount(0);
 
       } catch (error) {
         console.error('❌ Error checking user flow:', error);
-        // On error, assume user needs to start from registration
-        setFlowState({
-          isConnected: true,
-          isRegistered: false,
-          isActivated: false,
-          isProfileComplete: false,
+        
+        // Implement retry logic with exponential backoff
+        if (retryCount < 3) {
+          console.log(`⚠️ Retrying flow check (attempt ${retryCount + 1}/3)...`);
+          setRetryCount(prev => prev + 1);
+          
+          // Retry after a delay
+          setTimeout(() => {
+            checkUserFlow();
+          }, 1000 * (retryCount + 1)); // 1s, 2s, 3s delays
+          
+          return;
+        }
+        
+        // After max retries, keep previous state if available
+        console.error('❌ Max retries reached. Preserving previous state.');
+        setFlowState(prev => ({
+          ...prev,
           isLoading: false,
-          currentStep: 'register',
-          canAccessDashboard: false
-        });
+          // If we had a previous successful state, keep it
+          // Otherwise, stay in connect state to avoid false redirects
+          currentStep: prev.isRegistered ? prev.currentStep : 'connect'
+        }));
+        setRetryCount(0);
       }
     }
 
     checkUserFlow();
-  }, [account, isConnected, isCorrectChain]);
+  }, [account, isConnected, isCorrectChain, retryCount]);
 
   /**
    * Redirect to appropriate step if user tries to access dashboard prematurely
@@ -224,6 +252,9 @@ export function useUserFlow() {
   const refreshFlow = async () => {
     if (!account || !isConnected || !isCorrectChain) return;
     
+    // Clear cache to force fresh check
+    setLastSuccessfulCheck(null);
+    setRetryCount(0);
     setFlowState(prev => ({ ...prev, isLoading: true }));
     
     try {
@@ -243,6 +274,7 @@ export function useUserFlow() {
           currentStep: 'register',
           canAccessDashboard: false
         });
+        setLastSuccessfulCheck(`flow_${account}`);
         return;
       }
 
@@ -258,6 +290,7 @@ export function useUserFlow() {
           currentStep: 'activate',
           canAccessDashboard: false
         });
+        setLastSuccessfulCheck(`flow_${account}`);
         return;
       }
 
@@ -274,6 +307,7 @@ export function useUserFlow() {
           currentStep: 'profile',
           canAccessDashboard: false
         });
+        setLastSuccessfulCheck(`flow_${account}`);
         return;
       }
 
@@ -287,10 +321,15 @@ export function useUserFlow() {
         canAccessDashboard: true
       });
       
+      setLastSuccessfulCheck(`flow_${account}`);
       console.log('✅ Flow refresh complete');
     } catch (error) {
       console.error('❌ Error refreshing flow:', error);
-      setFlowState(prev => ({ ...prev, isLoading: false }));
+      // On error, preserve existing state instead of resetting
+      setFlowState(prev => ({ 
+        ...prev, 
+        isLoading: false
+      }));
     }
   };
 
