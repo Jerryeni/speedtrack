@@ -37,7 +37,10 @@ export default function GetOwnerCode() {
         ownerAddress = await speedTrack.owner();
         console.log('Contract Owner:', ownerAddress);
       } catch (ownerErr: any) {
-        throw new Error('Failed to get contract owner. Make sure you are on the correct network (BSC Testnet).');
+        console.warn('Could not get contract owner, contract may not be deployed yet');
+        setError('Contract not deployed or owner() function not available. Please deploy the contract first.');
+        setLoading(false);
+        return;
       }
       
       // Check if owner is registered using the public userId mapping

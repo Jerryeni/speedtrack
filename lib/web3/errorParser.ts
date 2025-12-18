@@ -114,6 +114,10 @@ export function parseContractError(error: any): string {
   }
 
   // Registration errors
+  if (errorLower.includes('owner cannot register')) {
+    return '👑 You are the contract owner and are automatically registered! You can skip registration and proceed directly to activate your account.';
+  }
+
   if (errorLower.includes('already registered')) {
     return '✅ You are already registered! You can proceed to activate your account.';
   }
@@ -259,6 +263,10 @@ export function parseInvestmentError(error: any): string {
 export function parseRegistrationError(error: any): string {
   const errorString = error?.message || error?.toString() || '';
   const errorLower = errorString.toLowerCase();
+
+  if (errorLower.includes('owner cannot register') || errorLower.includes('owner_cannot_register')) {
+    return '👑 You are the contract owner! Owners are automatically registered and cannot register again. Please proceed directly to activate your account.';
+  }
 
   if (errorLower.includes('already registered')) {
     return '✅ You are already registered! You can proceed to activate your account.';

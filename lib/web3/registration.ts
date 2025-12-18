@@ -24,15 +24,29 @@ export async function registerUser(data: RegistrationData): Promise<ethers.Contr
   // Step 3: Prepare parameters
   console.log('Step 3: Preparing parameters...');
   console.log('  - Referral Code:', data.referralCode);
-  console.log('  - Leader Address:', data.leaderAddress || 'Will use zero address');
+  console.log('  - Leader Address:', data.leaderAddress || 'Will determine based on referral code');
   
-  // Validate leader address if provided
-  let leaderAddress = ethers.ZeroAddress;
-  if (data.leaderAddress && data.leaderAddress.trim() !== '') {
+  // Determine leader address based on referral code
+  let leaderAddress: string;
+  
+  // Check if it's the admin code
+  const adminCode = await getAdminReferralCode();
+  if (data.referralCode.toUpperCase() === adminCode.toUpperCase()) {
+    // For ADMIN code, use zero address (first time registration)
+    console.log('  - Admin code detected, using zero address for first registration');
+    leaderAddress = ethers.ZeroAddress;
+    console.log('  - Using zero address as leader:', leaderAddress);
+  } else if (data.leaderAddress && data.leaderAddress.trim() !== '') {
+    // Use provided leader address
     if (!ethers.isAddress(data.leaderAddress)) {
       throw new Error('Invalid leader address format');
     }
     leaderAddress = data.leaderAddress;
+    console.log('  - Using provided leader address:', leaderAddress);
+  } else {
+    // No leader provided and not admin code - use zero address
+    leaderAddress = ethers.ZeroAddress;
+    console.log('  - No leader specified, using zero address');
   }
   
   console.log('✓ Final parameters:');
@@ -155,6 +169,7 @@ export async function validateReferralCode(referralCode: string): Promise<{ vali
     // Check if it's the admin code
     const adminCode = await getAdminReferralCode();
     if (referralCode.toUpperCase() === adminCode.toUpperCase()) {
+      // For admin code, use zero address (first time registration)
       return { 
         valid: true, 
         message: 'Admin referral code detected',

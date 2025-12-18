@@ -138,7 +138,7 @@ export default function RegistrationModal({ isOpen, onClose, onSuccess }: Regist
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700 relative">
         <button
           onClick={onClose}
           disabled={isRegistering}

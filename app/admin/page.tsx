@@ -48,6 +48,8 @@ export default function AdminPage() {
         }
       } catch (error) {
         console.error("Error checking admin:", error);
+        showToast("Contract not available. Please check deployment.", "error");
+        router.push("/dashboard");
         setIsAdmin(false);
       } finally {
         setIsLoading(false);
